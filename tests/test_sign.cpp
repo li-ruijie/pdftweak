@@ -15,6 +15,7 @@
 #include <ncrypt.h>
 
 #include <filesystem>
+#include <vector>
 
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "ncrypt.lib")
@@ -25,41 +26,73 @@ namespace {
 
 const std::pair<float, float> kA4{595.0f, 842.0f};
 
-// The certificate of the PKCS#12 fixture in CurrentUser\My with a persisted key, removed again by
-// the destructor.
+// Deletes a certificate's persisted private key, then the certificate from its store. Frees cert.
+void deleteWithKey(PCCERT_CONTEXT cert) {
+    HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key = 0;
+    DWORD spec = 0;
+    BOOL free = FALSE;
+    if (CryptAcquireCertificatePrivateKey(cert,
+                                          CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG | CRYPT_ACQUIRE_SILENT_FLAG,
+                                          nullptr, &key, &spec, &free))
+        NCryptDeleteKey(key, 0); // also frees the handle
+    CertDeleteCertificateFromStore(cert);
+}
+
+// Removes every certificate of the PKCS#12 fixture (subject CN=PDF Tweak Test) from CurrentUser\My
+// with its key, including those of a run that was killed before it could clean up.
+void sweepFixtureCertificates(HCERTSTORE my) {
+    std::vector<PCCERT_CONTEXT> found;
+    for (PCCERT_CONTEXT cert = CertEnumCertificatesInStore(my, nullptr); cert != nullptr;
+         cert = CertEnumCertificatesInStore(my, cert)) {
+        wchar_t name[128] = {};
+        CertGetNameStringW(cert, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nullptr, name, 128);
+        if (wcscmp(name, L"PDF Tweak Test") == 0)
+            found.push_back(CertDuplicateCertificateContext(cert));
+    }
+    for (PCCERT_CONTEXT cert : found)
+        deleteWithKey(cert);
+}
+
+// The certificate of the PKCS#12 fixture in CurrentUser\My with a persisted key. Every step that can
+// fail comes before the certificate enters the store, and the destructor removes it and its key, as
+// does the next run after a run that was killed.
 class StoredCertificate {
 public:
     explicit StoredCertificate(const std::filesystem::path& p12) {
+        my_ = CertOpenStore(CERT_STORE_PROV_SYSTEM_W, 0, 0, CERT_SYSTEM_STORE_CURRENT_USER, L"My");
+        CHECK(my_ != nullptr);
+        sweepFixtureCertificates(my_);
         std::string bytes = readFile(p12);
         CRYPT_DATA_BLOB blob{static_cast<DWORD>(bytes.size()), reinterpret_cast<BYTE*>(bytes.data())};
         HCERTSTORE imported =
             PFXImportCertStore(&blob, L"secret", CRYPT_USER_KEYSET | PKCS12_ALWAYS_CNG_KSP);
         CHECK(imported != nullptr);
         PCCERT_CONTEXT cert = CertEnumCertificatesInStore(imported, nullptr);
-        CHECK(cert != nullptr);
-        my_ = CertOpenStore(CERT_STORE_PROV_SYSTEM_W, 0, 0, CERT_SYSTEM_STORE_CURRENT_USER, L"My");
-        CHECK(my_ != nullptr);
-        CHECK(CertAddCertificateContextToStore(my_, cert, CERT_STORE_ADD_REPLACE_EXISTING, &stored_));
         BYTE hash[20];
         DWORD size = sizeof hash;
-        CHECK(CertGetCertificateContextProperty(cert, CERT_SHA1_HASH_PROP_ID, hash, &size));
+        const bool ready =
+            cert != nullptr && CertGetCertificateContextProperty(cert, CERT_SHA1_HASH_PROP_ID, hash, &size);
+        const bool added =
+            ready && CertAddCertificateContextToStore(my_, cert, CERT_STORE_ADD_REPLACE_EXISTING, &stored_);
+        if (!added && cert != nullptr) {
+            // the import persisted the key, which nothing else would delete
+            deleteWithKey(CertDuplicateCertificateContext(cert));
+        }
+        if (cert != nullptr)
+            CertFreeCertificateContext(cert);
+        CertCloseStore(imported, 0);
+        CHECK(added);
         for (DWORD i = 0; i < size; ++i) {
             char two[3];
             snprintf(two, sizeof two, "%02X", hash[i]);
             thumbprint_ += two;
         }
-        CertFreeCertificateContext(cert);
-        CertCloseStore(imported, 0);
     }
 
     ~StoredCertificate() {
-        HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key = 0;
-        DWORD spec = 0;
-        BOOL free = FALSE;
-        if (CryptAcquireCertificatePrivateKey(stored_, CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG, nullptr, &key,
-                                              &spec, &free))
-            NCryptDeleteKey(key, 0);
-        CertDeleteCertificateFromStore(stored_);
+        if (stored_ != nullptr)
+            deleteWithKey(stored_);
+        sweepFixtureCertificates(my_);
         CertCloseStore(my_, 0);
     }
 

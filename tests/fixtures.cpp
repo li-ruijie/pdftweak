@@ -235,8 +235,14 @@ std::filesystem::path pkcs12(const std::filesystem::path& dir) {
     // reads as the alias. Creating it fails rather than replacing a key of the same name, and the
     // destructor deletes it again.
     std::wstring keyName = L"mykey";
-    checkStatus(NCryptCreatePersistedKey(k.provider, &k.key, BCRYPT_RSA_ALGORITHM, keyName.c_str(), 0, 0),
-                "NCryptCreatePersistedKey");
+    const SECURITY_STATUS created =
+        NCryptCreatePersistedKey(k.provider, &k.key, BCRYPT_RSA_ALGORITHM, keyName.c_str(), 0, 0);
+    if (created == NTE_EXISTS)
+        throw Failure(
+            "A key named mykey already exists in the user's key storage, probably left by a test "
+            "run that was killed. Check that it is not one of yours, then delete it with: certutil "
+            "-user -csp \"Microsoft Software Key Storage Provider\" -delkey mykey");
+    checkStatus(created, "NCryptCreatePersistedKey");
     DWORD length = 2048;
     DWORD policy = NCRYPT_ALLOW_EXPORT_FLAG | NCRYPT_ALLOW_PLAINTEXT_EXPORT_FLAG;
     checkStatus(NCryptSetProperty(k.key, NCRYPT_LENGTH_PROPERTY, reinterpret_cast<PBYTE>(&length),
