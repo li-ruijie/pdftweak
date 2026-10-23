@@ -36,15 +36,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="process.h" />
     <ClInclude Include="runner.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="process.cpp" />
     <ClCompile Include="runner.cpp" />
     <ClCompile Include="test_libraries.cpp" />
+    <ClCompile Include="test_relay.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\core\core.vcxproj">
       <Project>{2CEEEB6F-533B-4ACD-9DBB-E66D9DF27122}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\src\app\app.vcxproj">
+      <Project>{D929E4B9-DED9-4F2E-A064-3678E822801E}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+    <ProjectReference Include="..\src\relay\relay.vcxproj">
+      <Project>{8635432E-C383-4AB6-B17A-E0D7F2BF86DC}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

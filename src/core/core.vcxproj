@@ -31,10 +31,14 @@
     <TargetName>pdftweak-core</TargetName>
   </PropertyGroup>
   <ItemGroup>
+    <ClInclude Include="cli.h" />
+    <ClInclude Include="console.h" />
     <ClInclude Include="libraries.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cli.cpp" />
+    <ClCompile Include="console.cpp" />
     <ClCompile Include="libraries.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
