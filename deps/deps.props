@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Points a project at the libraries deps.ps1 builds into deps\out\<Configuration>. Import after
+     Microsoft.Cpp.props and pdftweak.props. -->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PdfTweakDeps>$(MSBuildThisFileDirectory)out\$(Configuration)\</PdfTweakDeps>
+    <ExternalIncludePath>$(PdfTweakDeps)include;$(ExternalIncludePath)</ExternalIncludePath>
+    <PdfTweakTiffLib Condition="'$(Configuration)'=='Debug'">tiffd.lib</PdfTweakTiffLib>
+    <PdfTweakTiffLib Condition="'$(Configuration)'!='Debug'">tiff.lib</PdfTweakTiffLib>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(PdfTweakDeps)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>qpdf.lib;$(PdfTweakTiffLib);libmupdf.lib;libthirdparty.lib;libresources.lib;libpkcs7.lib;libextract.lib;libharfbuzz.lib;libleptonica.lib;libtesseract.lib;libmubarcode.lib;libzxing.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <Link>
+      <!-- MuPDF's Release libraries are compiled with /GL. -->
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <!-- An executable needs qpdf30.dll and tiff.dll beside it. -->
+  <Target Name="PdfTweakCopyDependencyDlls" AfterTargets="Build" Condition="'$(ConfigurationType)'=='Application'">
+    <ItemGroup>
+      <PdfTweakDependencyDll Include="$(PdfTweakDeps)bin\*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PdfTweakDependencyDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>
