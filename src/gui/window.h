@@ -90,6 +90,14 @@ protected:
     void onCommand(HWND control, std::function<void(int code)> handler);
     // Sends the WM_NOTIFY notifications of a control to a handler.
     void onNotify(HWND control, std::function<LRESULT(NMHDR*)> handler);
+    // Drops the handlers of a control that is destroyed.
+    void forget(HWND control);
+
+    // The margin around the layout, in pixels at 96 DPI, 4 unless set.
+    void setMargin(int pixels) { margin_ = pixels; }
+
+    // A page created as a child of this one, as a component of this page's layout.
+    Component childPage(Page& child);
 
     // A component made of a group box around a nested layout, as a panel with a TitledBorder.
     Component titled(HWND groupBox, Component inner);
@@ -106,6 +114,7 @@ private:
     Split* splitAt(POINT point);
 
     HWND hwnd_ = nullptr;
+    int margin_ = 4;
     Component root_;
     std::vector<std::unique_ptr<FormLayout>> layouts_;
     std::vector<std::unique_ptr<Split>> splits_;

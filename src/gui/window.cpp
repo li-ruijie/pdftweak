@@ -161,7 +161,7 @@ HWND Page::create(HWND parent) {
 
 SIZE Page::preferredSize() const {
     SIZE size = root_.preferred ? root_.preferred() : SIZE{0, 0};
-    const int margin = scaled(hwnd_, 4);
+    const int margin = scaled(hwnd_, margin_);
     return {size.cx + 2 * margin, size.cy + 2 * margin};
 }
 
@@ -170,7 +170,7 @@ void Page::relayout() {
         return;
     RECT client;
     GetClientRect(hwnd_, &client);
-    const int margin = scaled(hwnd_, 4);
+    const int margin = scaled(hwnd_, margin_);
     InflateRect(&client, -margin, -margin);
     root_.place(client);
     InvalidateRect(hwnd_, nullptr, TRUE);
@@ -247,6 +247,24 @@ HWND Page::groupBox(const std::wstring& text) { return createChild(hwnd_, WC_BUT
 
 void Page::onCommand(HWND control, std::function<void(int code)> handler) {
     commands_[control] = std::move(handler);
+}
+
+void Page::forget(HWND control) {
+    commands_.erase(control);
+    notifies_.erase(control);
+    droppedIndex_.erase(control);
+}
+
+Component Page::childPage(Page& child) {
+    const HWND hwnd = child.create(hwnd_);
+    ShowWindow(hwnd, SW_SHOW);
+    Component component;
+    component.preferred = [&child]() { return child.preferredSize(); };
+    component.place = [hwnd](const RECT& rect) {
+        SetWindowPos(hwnd, nullptr, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+                     SWP_NOZORDER | SWP_NOACTIVATE);
+    };
+    return component;
 }
 
 void Page::onNotify(HWND control, std::function<LRESULT(NMHDR*)> handler) {

@@ -35,6 +35,7 @@
     <ClInclude Include="form_layout.h" />
     <ClInclude Include="main_window.h" />
     <ClInclude Include="tab.h" />
+    <ClInclude Include="table_editor.h" />
     <ClInclude Include="tabs.h" />
     <ClInclude Include="window.h" />
   </ItemGroup>
@@ -42,6 +43,7 @@
     <ClCompile Include="dialogs.cpp" />
     <ClCompile Include="form_layout.cpp" />
     <ClCompile Include="main_window.cpp" />
+    <ClCompile Include="table_editor.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>
