@@ -53,3 +53,5 @@ LICENSE.
   target, and links with null coordinates no longer fail
 - Port the background, text watermark, page numbers, page labels, bookmarks, attachments, page
   transitions, and viewer preferences
+- Write every stream of the document uncompressed with the `u` output flag, where Java left the
+  streams it copied from the input compressed
