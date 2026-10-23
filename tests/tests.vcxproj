@@ -34,6 +34,9 @@
     <Link>
       <SubSystem>Console</SubSystem>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>..\res\pdftweak.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="cli_run.h" />
@@ -50,6 +53,7 @@
     <ClCompile Include="runner.cpp" />
     <ClCompile Include="test_content.cpp" />
     <ClCompile Include="test_formats.cpp" />
+    <ClCompile Include="test_gui.cpp" />
     <ClCompile Include="test_images.cpp" />
     <ClCompile Include="test_libraries.cpp" />
     <ClCompile Include="test_operations.cpp" />
@@ -62,6 +66,9 @@
     <ClCompile Include="test_support.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\gui\gui.vcxproj">
+      <Project>{9CC658F1-9589-4A5C-AA8B-A8653D23100F}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\src\core\core.vcxproj">
       <Project>{2CEEEB6F-533B-4ACD-9DBB-E66D9DF27122}</Project>
     </ProjectReference>

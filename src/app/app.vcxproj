@@ -45,6 +45,9 @@
     <ResourceCompile Include="app.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\gui\gui.vcxproj">
+      <Project>{9CC658F1-9589-4A5C-AA8B-A8653D23100F}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\core\core.vcxproj">
       <Project>{2CEEEB6F-533B-4ACD-9DBB-E66D9DF27122}</Project>
     </ProjectReference>
