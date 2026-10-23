@@ -36,18 +36,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="cli_run.h" />
     <ClInclude Include="fixtures.h" />
     <ClInclude Include="inspect.h" />
     <ClInclude Include="process.h" />
     <ClInclude Include="runner.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cli_run.cpp" />
     <ClCompile Include="fixtures.cpp" />
     <ClCompile Include="inspect.cpp" />
     <ClCompile Include="process.cpp" />
     <ClCompile Include="runner.cpp" />
     <ClCompile Include="test_formats.cpp" />
     <ClCompile Include="test_libraries.cpp" />
+    <ClCompile Include="test_operations.cpp" />
+    <ClCompile Include="test_output.cpp" />
+    <ClCompile Include="test_regressions.cpp" />
     <ClCompile Include="test_relay.cpp" />
     <ClCompile Include="test_support.cpp" />
   </ItemGroup>

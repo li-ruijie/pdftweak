@@ -142,7 +142,7 @@ std::filesystem::path writePdf(const std::filesystem::path& dir, const std::stri
         info.replaceKey("/" + key, QPDFObjectHandle::newUnicodeString(value));
     pdf.getTrailer().replaceKey("/Info", pdf.makeIndirectObject(info));
     if (options.xmp) {
-        QPDFObjectHandle metadata = pdf.newStream(kXmp);
+        QPDFObjectHandle metadata = pdf.newStream(options.xmpPacket.empty() ? kXmp : options.xmpPacket);
         metadata.getDict().replaceKey("/Type", QPDFObjectHandle::newName("/Metadata"));
         metadata.getDict().replaceKey("/Subtype", QPDFObjectHandle::newName("/XML"));
         pdf.getRoot().replaceKey("/Metadata", metadata);

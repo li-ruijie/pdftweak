@@ -46,6 +46,18 @@ std::vector<TextRun> textPositions(const std::filesystem::path& pdf, int page);
 // The text of a page, its lines joined by newlines.
 std::string text(const std::filesystem::path& pdf, int page);
 
+// OperationTests.pageLabelsOf: the trimmed text of each page, as "[A1, A2, B1]".
+std::string pageTexts(const std::filesystem::path& pdf);
+
+// OperationTests.pageNumbers: n for each page saying "Page n" and 0 for a blank page, as "[1, 0, 2]".
+std::string pageNumbers(const std::filesystem::path& pdf);
+
+// OperationTests.pageEntry: the integer under key in a page dictionary, or -1.
+int pageEntry(const std::filesystem::path& pdf, int page, const std::string& key);
+
+// OperationTests.objectCount: the number of objects in the file.
+int objectCount(const std::filesystem::path& pdf);
+
 // OperationTests.tiffTags: the tags of the first image file directory of a TIFF. SHORT and LONG
 // values are read as numbers, and other types have no values.
 std::map<int, std::vector<long long>> tiffTags(const std::string& tiff);

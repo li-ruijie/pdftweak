@@ -32,6 +32,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ClInclude Include="cli.h" />
+    <ClInclude Include="cli\command_option.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="error.h" />
     <ClInclude Include="formats\bookmark.h" />
@@ -45,12 +46,21 @@
     <ClInclude Include="formats\xmp.h" />
     <ClInclude Include="java_text.h" />
     <ClInclude Include="libraries.h" />
+    <ClInclude Include="mupdf_bridge.h" />
+    <ClInclude Include="pdf\copy_pages.h" />
+    <ClInclude Include="pdf\input_file.h" />
+    <ClInclude Include="pdf\outline.h" />
+    <ClInclude Include="pdf\qpdf_util.h" />
+    <ClInclude Include="pdf\tweak.h" />
     <ClInclude Include="progress.h" />
     <ClInclude Include="text.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli.cpp" />
+    <ClCompile Include="cli\docinfo_option.cpp" />
+    <ClCompile Include="cli\encrypt_options.cpp" />
+    <ClCompile Include="cli\info_option.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="formats\bookmark.cpp" />
     <ClCompile Include="formats\integer_list.cpp" />
@@ -63,6 +73,13 @@
     <ClCompile Include="formats\xmp.cpp" />
     <ClCompile Include="java_text.cpp" />
     <ClCompile Include="libraries.cpp" />
+    <ClCompile Include="mupdf_bridge.cpp" />
+    <ClCompile Include="pdf\copy_pages.cpp" />
+    <ClCompile Include="pdf\input_file.cpp" />
+    <ClCompile Include="pdf\outline.cpp" />
+    <ClCompile Include="pdf\qpdf_util.cpp" />
+    <ClCompile Include="pdf\tweak.cpp" />
+    <ClCompile Include="pdf\tweak_output.cpp" />
     <ClCompile Include="text.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

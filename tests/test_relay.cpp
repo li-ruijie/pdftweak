@@ -20,5 +20,8 @@ TEST(main_relayPassesErrorsAndFailure) {
                                                    L"\"an argument with spaces\"");
     CHECK_EQUAL(result.exitCode, 1ul);
     CHECK_EQUAL(result.out, std::string(""));
-    CHECK(result.err.find("-version") != std::string::npos);
+    // the argument arrives whole, as the name of a missing input file
+    CHECK(result.err.starts_with("Error: "));
+    CHECK(result.err.find("\\an argument with spaces not found as file or resource.\r\n") !=
+          std::string::npos);
 }

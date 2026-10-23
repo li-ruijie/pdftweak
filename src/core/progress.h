@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <string>
 
 namespace pdftweak {
@@ -13,6 +14,11 @@ public:
     virtual void stage(const std::string& utf8Label, long long units) = 0;
     virtual void advance(long long units = 1) = 0;
     virtual bool cancelled() const = 0;
+};
+
+// Thrown at the next page or stage boundary after Progress::cancelled() turns true.
+struct Cancelled : std::runtime_error {
+    Cancelled() : std::runtime_error("Cancelled") {}
 };
 
 // Reports nothing and never cancels, for the command line.

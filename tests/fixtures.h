@@ -23,6 +23,7 @@ struct FixtureOptions {
     // and ModDate that iText writes.
     std::vector<std::pair<std::string, std::string>> info;
     bool xmp = false;       // an XMP metadata stream, as PdfWriter.createXmpMetadata adds
+    std::string xmpPacket;  // the packet of that stream, or empty for a plain one
     bool textField = false; // a text field "name" with the value "value" at [100 700 300 720] on page 1
 };
 

@@ -3,6 +3,7 @@
 #include "fixtures.h"
 #include "runner.h"
 
+#include "core/java_text.h"
 #include "core/text.h"
 
 #include <windows.h>
@@ -243,6 +244,34 @@ std::string text(const std::filesystem::path& pdf, int page) {
         result += line.text;
     }
     return result;
+}
+
+std::string pageTexts(const std::filesystem::path& pdf) {
+    std::string list = "[";
+    for (int page = 1; page <= pageCount(pdf); ++page)
+        list += (page > 1 ? ", " : "") + javaTrim(text(pdf, page));
+    return list + "]";
+}
+
+std::string pageNumbers(const std::filesystem::path& pdf) {
+    std::string list = "[";
+    for (int page = 1; page <= pageCount(pdf); ++page) {
+        const std::string t = javaTrim(text(pdf, page));
+        list +=
+            (page > 1 ? ", " : "") + (t.empty() ? std::string("0") : t.substr(std::string("Page ").size()));
+    }
+    return list + "]";
+}
+
+int pageEntry(const std::filesystem::path& pdf, int page, const std::string& key) {
+    const auto qpdf = openPdf(pdf);
+    QPDFObjectHandle value = pageOf(*qpdf, page).getObjectHandle().getKey("/" + key);
+    return value.isInteger() ? value.getIntValueAsInt() : -1;
+}
+
+int objectCount(const std::filesystem::path& pdf) {
+    const auto qpdf = openPdf(pdf);
+    return static_cast<int>(qpdf->getAllObjects().size());
 }
 
 std::map<int, std::vector<long long>> tiffTags(const std::string& tiff) {

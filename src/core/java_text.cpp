@@ -431,8 +431,59 @@ int javaStringHash(std::string_view utf8) {
     return static_cast<int>(h);
 }
 
-std::vector<size_t> javaHashMapOrder(const std::vector<std::string>& keys) {
-    size_t capacity = 16;
+std::string itextNumber(double d) {
+    if (std::fabs(d) < 0.000015)
+        return "0";
+    std::string text;
+    if (d < 0) {
+        text = "-";
+        d = -d;
+    }
+    if (d < 1.0) {
+        d += 0.000005;
+        if (d >= 1)
+            return text + "1";
+        const int v = static_cast<int>(d * 100000);
+        text += "0.";
+        text += static_cast<char>('0' + v / 10000);
+        if (v % 10000 != 0) {
+            text += static_cast<char>('0' + (v / 1000) % 10);
+            if (v % 1000 != 0) {
+                text += static_cast<char>('0' + (v / 100) % 10);
+                if (v % 100 != 0) {
+                    text += static_cast<char>('0' + (v / 10) % 10);
+                    if (v % 10 != 0)
+                        text += static_cast<char>('0' + v % 10);
+                }
+            }
+        }
+        return text;
+    }
+    if (d <= 32767) {
+        d += 0.005;
+        const int v = static_cast<int>(d * 100);
+        text += std::to_string(v / 100);
+        if (v % 100 != 0) {
+            text += '.';
+            text += static_cast<char>('0' + (v / 10) % 10);
+            if (v % 10 != 0)
+                text += static_cast<char>('0' + v % 10);
+        }
+        return text;
+    }
+    return text + std::to_string(static_cast<long long>(d + 0.5));
+}
+
+size_t javaHashMapCopyCapacity(size_t size) {
+    const auto wanted = static_cast<size_t>(static_cast<float>(size) / 0.75f + 1.0f);
+    size_t capacity = 1;
+    while (capacity < wanted)
+        capacity *= 2;
+    return capacity;
+}
+
+std::vector<size_t> javaHashMapOrder(const std::vector<std::string>& keys, size_t initialCapacity) {
+    size_t capacity = initialCapacity;
     while (keys.size() > capacity * 3 / 4)
         capacity *= 2;
     std::vector<size_t> order(keys.size());

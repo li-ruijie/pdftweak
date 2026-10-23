@@ -326,6 +326,62 @@ TEST(unit_javaHashMapOrderMatchesJava) {
                 std::string("Named,Action,Rect,NewWindow,Color,Style,URI,File"));
 }
 
+TEST(unit_hashMapCopiesKeepJavaOrder) {
+    // new HashMap(map) of a SimpleBookmark map, after PdfBookmark.fillInBookmark removes Kids, Open,
+    // Style, and Title, as OpenJDK 27.0.1 printed the key sets
+    const auto copied = [](const std::vector<std::string>& keys) {
+        std::vector<std::string> source;
+        for (const size_t i : javaHashMapOrder(keys))
+            source.push_back(keys[i]);
+        std::string text;
+        for (const size_t i : javaHashMapOrder(source, javaHashMapCopyCapacity(source.size()))) {
+            const std::string& key = source[i];
+            if (key == "Kids" || key == "Open" || key == "Style" || key == "Title")
+                continue;
+            text += (text.empty() ? "" : ",") + key;
+        }
+        return text;
+    };
+    CHECK_EQUAL(copied({"Title", "Color", "Style", "Open", "Named", "Action", "Kids"}),
+                std::string("Named,Action,Color"));
+    CHECK_EQUAL(copied({"Title", "Color", "Action", "URI"}), std::string("Action,URI,Color"));
+    CHECK_EQUAL(copied({"Title", "Page", "Action", "File", "NewWindow"}),
+                std::string("Action,Page,File,NewWindow"));
+    CHECK_EQUAL(copied({"Title", "Open", "NamedN", "Action", "File", "NewWindow", "Kids"}),
+                std::string("Action,NamedN,NewWindow,File"));
+    CHECK_EQUAL(copied({"Title", "Color", "Style", "Open", "Action", "Code", "Kids", "X1", "X2", "X3", "X4",
+                        "X5", "X6"}),
+                std::string("Action,Color,Code,X1,X2,X3,X4,X5,X6"));
+}
+
+TEST(unit_itextNumbersMatchByteBuffer) {
+    // each pair as iText 5.5.13.6's ByteBuffer.formatDouble printed it
+    const std::pair<double, const char*> cases[] = {{0, "0"},
+                                                    {0.5, "0.5"},
+                                                    {1, "1"},
+                                                    {0.05, "0.05"},
+                                                    {12.345, "12.35"},
+                                                    {0.000014, "0"},
+                                                    {0.000016, "0.00002"},
+                                                    {100000, "100000"},
+                                                    {-2.5, "-2.5"},
+                                                    {0.999999, "1"},
+                                                    {32767.5, "32768"},
+                                                    {32767, "32767"},
+                                                    {0.12345, "0.12345"},
+                                                    {0.123456, "0.12346"},
+                                                    {595.2756, "595.28"},
+                                                    {-0.3333, "-0.3333"},
+                                                    {1.005, "1"},
+                                                    {2.675, "2.68"},
+                                                    {0.1f, "0.1"},
+                                                    {0.7f, "0.7"},
+                                                    {1e-7, "0"},
+                                                    {-32768.4, "-32768"}};
+    for (const auto& [value, expected] : cases)
+        CHECK_EQUAL(itextNumber(value), std::string(expected));
+}
+
 TEST(unit_xmpPropertiesAreUpdatedInPlace) {
     const std::string date = "2026-10-24T09:30:00+08:00";
     const std::string element =

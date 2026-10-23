@@ -42,11 +42,21 @@ std::string javaUtf8Decode(std::string_view bytes);
 int javaStringHash(std::string_view utf8);
 
 // The iteration order of a java.util.HashMap<String, ?> whose keys were put in the given order (no
-// duplicates): buckets in index order for the final capacity (16, doubling whenever the count
-// passes three quarters of it), insertion order within a bucket. Resizing keeps the relative order
+// duplicates): buckets in index order for the final capacity (initialCapacity, 16 for new
+// HashMap(), doubling whenever the count passes three quarters of it), insertion order within a
+// bucket. Resizing keeps the relative order
 // within a bucket, so only the final capacity matters. A bin is turned into a tree only after
 // eight collisions at capacity 64 or more, which the maps of document information and bookmark
 // options cannot reach, so trees are not modelled. Returns indices into keys.
-std::vector<size_t> javaHashMapOrder(const std::vector<std::string>& keys);
+std::vector<size_t> javaHashMapOrder(const std::vector<std::string>& keys, size_t initialCapacity = 16);
+
+// iText's ByteBuffer.formatDouble, which writes the numbers of content streams and of bookmark
+// colours: 0 below 0.000015, five decimals below 1, two decimals up to 32767, and whole numbers
+// above, each without trailing zeros.
+std::string itextNumber(double value);
+
+// The capacity of new HashMap(map) for a map of the given size: tableSizeFor((int) (size / 0.75f +
+// 1.0f)). Its keys go in in the iteration order of the source map.
+size_t javaHashMapCopyCapacity(size_t size);
 
 } // namespace pdftweak
