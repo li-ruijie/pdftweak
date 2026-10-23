@@ -279,3 +279,17 @@ TEST(main_tempFilesCarryTheMergedDocument) {
     runCli({"-ots", "temp-optimized.pdf", a, b});
     CHECK_EQUAL(pageTexts("temp-optimized.pdf"), std::string("[A1, A2, B1]"));
 }
+
+// Java on Windows canonicalised the output name before writing, which refuses wildcards and names
+// Windows cannot look up, and reported an output it could not create as FileNotFoundException did.
+TEST(main_outputNamesFailAsJavaDoesOnWindows) {
+    const auto in = fixture(".", "in.pdf", 1);
+    CHECK_EQUAL(cliError({in, "a*b.pdf"}), std::string("Bad pathname"));
+    CHECK_EQUAL(cliError({in, "-oi", "multi*.tiff"}), std::string("Bad pathname"));
+    CHECK_EQUAL(cliError({in, "a|b.pdf"}),
+                std::string("The filename, directory name, or volume label syntax is incorrect"));
+    CHECK_EQUAL(cliError({in, "nodir\\out.pdf"}),
+                std::string("nodir\\out.pdf (The system cannot find the path specified)"));
+    CHECK_EQUAL(cliError({in, "-info", "nodir\\info.txt"}),
+                std::string("nodir\\info.txt (The system cannot find the path specified)"));
+}

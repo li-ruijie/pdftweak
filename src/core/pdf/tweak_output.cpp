@@ -3,6 +3,7 @@
 #include "core/pdf/tweak.h"
 
 #include "core/error.h"
+#include "core/files.h"
 #include "core/formats/page_labels.h"
 #include "core/formats/xmp.h"
 #include "core/mupdf_bridge.h"
@@ -23,7 +24,9 @@ void replaceAll(std::wstring& text, const std::wstring& from, const std::wstring
         text.replace(at, from.size(), to);
 }
 
+// inputFiles.contains(file.getCanonicalFile()), which fails as Java's canonicalisation does
 bool isInput(const std::vector<std::filesystem::path>& inputs, const std::filesystem::path& file) {
+    checkCanonical(file);
     std::error_code ignored;
     if (!std::filesystem::exists(file, ignored))
         return false;
@@ -34,6 +37,7 @@ bool isInput(const std::vector<std::filesystem::path>& inputs, const std::filesy
 
 void writeFile(QPDF& pdf, const std::filesystem::path& file,
                const std::function<void(QPDFWriter&)>& configure) {
+    createForWriting(file, utf8Path(file));
     QPDFWriter writer(pdf, utf8Path(file).c_str());
     configure(writer);
     writer.write();
@@ -204,6 +208,7 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
             if (signingKey_) {
                 // spec section 7: qpdf writes a temporary file, MuPDF appends the signature to it, and
                 // the signed file becomes the output
+                createForWriting(name, toUtf8(name));
                 const std::filesystem::path temp = temporaryFile();
                 try {
                     writeFile(*current_, temp, configure);

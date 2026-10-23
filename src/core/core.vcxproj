@@ -35,6 +35,7 @@
     <ClInclude Include="cli\command_option.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="error.h" />
+    <ClInclude Include="files.h" />
     <ClInclude Include="formats\bookmark.h" />
     <ClInclude Include="formats\integer_list.h" />
     <ClInclude Include="formats\page_dimension.h" />
@@ -73,6 +74,7 @@
     <ClCompile Include="cli\page_options.cpp" />
     <ClCompile Include="cli\sign_options.cpp" />
     <ClCompile Include="console.cpp" />
+    <ClCompile Include="files.cpp" />
     <ClCompile Include="formats\bookmark.cpp" />
     <ClCompile Include="formats\integer_list.cpp" />
     <ClCompile Include="formats\page_dimension.cpp" />

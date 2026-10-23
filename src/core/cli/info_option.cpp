@@ -3,6 +3,7 @@
 #include "core/cli/command_option.h"
 
 #include "core/error.h"
+#include "core/files.h"
 #include "core/formats/bookmark.h"
 #include "core/formats/tables.h"
 #include "core/java_text.h"
@@ -36,6 +37,7 @@ public:
             output.out(text);
             return;
         }
+        createForWriting(std::filesystem::path(fromUtf8(infoFilename_)), infoFilename_);
         std::ofstream out(std::filesystem::path(fromUtf8(infoFilename_)),
                           std::ios::binary | std::ios::trunc);
         out.write(text.data(), static_cast<std::streamsize>(text.size()));
