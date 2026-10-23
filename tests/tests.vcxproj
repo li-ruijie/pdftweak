@@ -48,6 +48,7 @@
     <ClCompile Include="inspect.cpp" />
     <ClCompile Include="process.cpp" />
     <ClCompile Include="runner.cpp" />
+    <ClCompile Include="test_content.cpp" />
     <ClCompile Include="test_formats.cpp" />
     <ClCompile Include="test_libraries.cpp" />
     <ClCompile Include="test_operations.cpp" />

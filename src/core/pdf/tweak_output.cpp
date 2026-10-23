@@ -173,6 +173,7 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
         } else {
             checkCancelled();
             progress_.stage("Writing output", 1);
+            applyOutputSettings(*current_);
             finishInformation(*current_);
             writeFile(*current_, name, configure);
             progress_.advance();

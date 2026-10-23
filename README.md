@@ -50,3 +50,5 @@ LICENSE.
   named destinations, attachments, viewer settings, the open action, the language, optional content,
   and (except shuffling) page labels, with destinations moved to the first page that shows their
   target, and links with null coordinates no longer fail
+- Port the background, text watermark, page numbers, page labels, bookmarks, attachments, page
+  transitions, and viewer preferences

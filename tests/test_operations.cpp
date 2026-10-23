@@ -158,14 +158,7 @@ TEST(main_outputNamesUseVariablesAndLabels) {
     runCli({in, "<P>\\n<#>.pdf"});
     runCli({in, "<P>\\n<#>.pdf"});
     CHECK(std::filesystem::is_regular_file("n1.pdf") && std::filesystem::is_regular_file("n2.pdf"));
-    {
-        // page labels a and b, which -pagenumbers "1=1a" would set
-        QPDF pdf;
-        pdf.processFile("in.pdf");
-        pdf.getRoot().replaceKey("/PageLabels", QPDFObjectHandle::parse("<< /Nums [0 << /S /a >>] >>"));
-        QPDFWriter writer(pdf, "labelled.pdf");
-        writer.write();
-    }
+    runCli({in, "-pagenumbers", "1=1a", "labelled.pdf"});
     runCli({"labelled.pdf", "-ob", std::filesystem::absolute("page-*.pdf")});
     CHECK(std::filesystem::is_regular_file("page-a.pdf") && std::filesystem::is_regular_file("page-b.pdf"));
     CHECK_EQUAL(cliError({in, in}), std::string("Output file must be different from input file(s)"));

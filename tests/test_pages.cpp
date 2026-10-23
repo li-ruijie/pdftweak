@@ -439,6 +439,23 @@ TEST(main_rebuiltPagesKeepTheCatalog) {
                     common + "labels: null\nhidden layer shared: true\n");
 }
 
+// Optimizing the size copies the pages, and keeps what the steps that rebuild them keep.
+TEST(main_optimizedSizeKeepsTheCatalog) {
+    const auto in = catalogFixture();
+    runCli({in, "-os", "optimized.pdf"});
+    CHECK_EQUAL(catalogSummary("optimized.pdf"), catalogSummary(in));
+}
+
+// Setting page labels changes nothing else in the catalog.
+TEST(main_pageLabelsKeepTheCatalog) {
+    const auto in = catalogFixture();
+    runCli({in, "-pagenumbers", "1=1A", "labelled.pdf"});
+    std::string expected = catalogSummary(in);
+    const std::string from = "labels: [i, ii, iii]";
+    expected.replace(expected.find(from), from.size(), "labels: [A, B, C]");
+    CHECK_EQUAL(catalogSummary("labelled.pdf"), expected);
+}
+
 TEST(main_shuffleRepeatsPerBlock) {
     const auto in = pdfOfSizes(".", "in.pdf", std::vector<std::pair<float, float>>(8, kA4));
     runCli({in, "-shuffle", "-4,4:!-4N1+0%+0%,!+1N1+0%+0%,!+2N1+0%+0%,!-3N1+0%+0%", "out.pdf"});
@@ -525,4 +542,7 @@ TEST(main_outputFlagsWithTemporaryFiles) {
     runCli({in, "-crop", "MediaBox", "-rotexp", "R", "-ot", "temp.pdf"});
     CHECK_EQUAL(pageNumbers("temp.pdf"), std::string("[1, 2]"));
     CHECK(boxIs("temp.pdf", 2, 842, 595));
+    runCli({in, "-watermark", "X,10,0.5", "-bookmark", "1;O;T;1", "--", "-crop", "MediaBox", "-ot",
+            "temp-marks.pdf"});
+    CHECK_EQUAL(pageCount("temp-marks.pdf"), 2);
 }

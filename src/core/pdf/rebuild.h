@@ -17,6 +17,11 @@ namespace pdftweak::pdf {
 // A PDF matrix a b c d e f, in the float arithmetic of the Java code.
 using Matrix = std::array<float, 6>;
 
+// PdfImportedPage: page of another document as a Form XObject of to, with its content, resources,
+// and a BBox of its MediaBox moved to the origin by its Matrix. The other document must stay open
+// until to is written.
+QPDFObjectHandle importPage(QPDF& to, QPDFObjectHandle page);
+
 class PageBuilder {
 public:
     explicit PageBuilder(QPDF& source);

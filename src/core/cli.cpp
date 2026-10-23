@@ -299,7 +299,13 @@ std::vector<std::unique_ptr<CommandOption>> buildOptions() {
     options.push_back(makeCropOption());
     options.push_back(makeRotateOption());
     options.push_back(makeScaleOption());
+    options.push_back(makeWatermarkOptions());
     options.push_back(makeShuffleOption());
+    options.push_back(makePageNumberOption());
+    options.push_back(makeBookmarksOption());
+    options.push_back(makeAttachOption());
+    options.push_back(makeTransitionOption());
+    options.push_back(makeViewerOptions());
     options.push_back(makeDocInfoOption());
     options.push_back(makeEncryptOptions());
     options.push_back(makeInfoOption());

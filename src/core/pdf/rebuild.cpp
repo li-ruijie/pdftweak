@@ -48,6 +48,48 @@ QPDFObjectHandle copyScalar(QPDFObjectHandle object) { return QPDFObjectHandle::
 
 } // namespace
 
+QPDFObjectHandle importPage(QPDF& to, QPDFObjectHandle page) {
+    QPDFObjectHandle contents = page.getKey("/Contents");
+    QPDFObjectHandle form;
+    if (contents.isStream()) {
+        // the content stream as it is, with its filters (PdfReaderInstance.getFormXObject)
+        form = to.newStream();
+        QPDFObjectHandle dict = contents.getDict();
+        for (const std::string& key : dict.getKeys())
+            if (key != "/Length" && key != "/Filter" && key != "/DecodeParms")
+                form.getDict().replaceKey(key, copyFrom(to, dict.getKey(key)));
+        form.replaceStreamData(bytes(contents.getRawStreamData()), copyFrom(to, dict.getKey("/Filter")),
+                               copyFrom(to, dict.getKey("/DecodeParms")));
+    } else {
+        // PdfReader.getPageContent: the streams joined by newlines
+        std::string data;
+        if (contents.isArray()) {
+            for (int i = 0; i < contents.getArrayNItems(); ++i) {
+                QPDFObjectHandle part = contents.getArrayItem(i);
+                if (part.isStream())
+                    data += bytes(part.getStreamData(qpdf_dl_generalized));
+                if (i != contents.getArrayNItems() - 1)
+                    data += '\n';
+            }
+        }
+        form = to.newStream(data);
+    }
+    QPDFObjectHandle resources = QPDFPageObjectHelper(page).getAttribute("/Resources", false);
+    QPDFObjectHandle dict = form.getDict();
+    if (!resources.isNull())
+        dict.replaceKey("/Resources", copyFrom(to, resources));
+    dict.replaceKey("/Type", QPDFObjectHandle::newName("/XObject"));
+    dict.replaceKey("/Subtype", QPDFObjectHandle::newName("/Form"));
+    const Rect box = pageSize(page);
+    dict.replaceKey("/BBox", rectangleObject(box));
+    dict.replaceKey("/Matrix",
+                    QPDFObjectHandle::newArray({itextNumberObject(1), itextNumberObject(0),
+                                                itextNumberObject(0), itextNumberObject(1),
+                                                itextNumberObject(-box.llx), itextNumberObject(-box.lly)}));
+    dict.replaceKey("/FormType", QPDFObjectHandle::newInteger(1));
+    return form;
+}
+
 // ---- PageBuilder ----
 
 PageBuilder::PageBuilder(QPDF& source) : source_(source), sourcePages_(pages(source)) {
@@ -78,45 +120,8 @@ QPDFObjectHandle PageBuilder::importedPage(int sourcePage) {
     const auto found = templates_.find(sourcePage);
     if (found != templates_.end())
         return found->second.second;
-    QPDFObjectHandle page = sourcePages_.at(static_cast<size_t>(sourcePage - 1)).getObjectHandle();
-    QPDFObjectHandle contents = page.getKey("/Contents");
-    QPDFObjectHandle form;
-    if (contents.isStream()) {
-        // the content stream as it is, with its filters (PdfReaderInstance.getFormXObject)
-        form = out_->newStream();
-        QPDFObjectHandle dict = contents.getDict();
-        for (const std::string& key : dict.getKeys())
-            if (key != "/Length" && key != "/Filter" && key != "/DecodeParms")
-                form.getDict().replaceKey(key, copyFrom(*out_, dict.getKey(key)));
-        form.replaceStreamData(bytes(contents.getRawStreamData()), copyFrom(*out_, dict.getKey("/Filter")),
-                               copyFrom(*out_, dict.getKey("/DecodeParms")));
-    } else {
-        // PdfReader.getPageContent: the streams joined by newlines
-        std::string data;
-        if (contents.isArray()) {
-            for (int i = 0; i < contents.getArrayNItems(); ++i) {
-                QPDFObjectHandle part = contents.getArrayItem(i);
-                if (part.isStream())
-                    data += bytes(part.getStreamData(qpdf_dl_generalized));
-                if (i != contents.getArrayNItems() - 1)
-                    data += '\n';
-            }
-        }
-        form = out_->newStream(data);
-    }
-    QPDFObjectHandle resources = QPDFPageObjectHelper(page).getAttribute("/Resources", false);
-    QPDFObjectHandle dict = form.getDict();
-    if (!resources.isNull())
-        dict.replaceKey("/Resources", copyFrom(*out_, resources));
-    dict.replaceKey("/Type", QPDFObjectHandle::newName("/XObject"));
-    dict.replaceKey("/Subtype", QPDFObjectHandle::newName("/Form"));
-    const Rect box = pageSize(page);
-    dict.replaceKey("/BBox", rectangleObject(box));
-    dict.replaceKey("/Matrix",
-                    QPDFObjectHandle::newArray({itextNumberObject(1), itextNumberObject(0),
-                                                itextNumberObject(0), itextNumberObject(1),
-                                                itextNumberObject(-box.llx), itextNumberObject(-box.lly)}));
-    dict.replaceKey("/FormType", QPDFObjectHandle::newInteger(1));
+    QPDFObjectHandle form =
+        importPage(*out_, sourcePages_.at(static_cast<size_t>(sourcePage - 1)).getObjectHandle());
     const std::string name = "/Xf" + std::to_string(templates_.size() + 1);
     templates_.emplace(sourcePage, std::make_pair(name, form));
     return form;
