@@ -8,7 +8,7 @@
 //   DEFLATE. No predictor is used.
 // - Rows per strip are max(8192 / bytes per row, 1, 8), rounded for JPEG to a multiple of 8 rows
 //   for grey and 16 for RGB when the strip is shorter than the image.
-// - The resolution is 1 by 1 without a unit.
+// - The resolution is 1 by 1 without a unit, and PlanarConfiguration is left at its default.
 
 #include "core/image/encoders.h"
 
@@ -76,7 +76,6 @@ void writeTiff(const std::wstring& path, int count, const std::function<Image(in
         TIFFSetField(t, TIFFTAG_IMAGELENGTH, static_cast<uint32_t>(image.height));
         TIFFSetField(t, TIFFTAG_BITSPERSAMPLE, 8);
         TIFFSetField(t, TIFFTAG_SAMPLESPERPIXEL, image.channels);
-        TIFFSetField(t, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
         TIFFSetField(t, TIFFTAG_COMPRESSION, code);
         if (image.channels == 4) {
             const uint16_t extra[] = {EXTRASAMPLE_ASSOCALPHA};

@@ -175,6 +175,8 @@ TEST(main_imageExportTiffCompressionAndJpegQuality) {
     CHECK(std::filesystem::file_size("q10-1.jpg") < std::filesystem::file_size("q90-1.jpg"));
     // JPEG in a TIFF stores RGB as YCbCr, as the JDK's writer does
     CHECK_EQUAL(tiffTags(readFile("JPEG-1.tiff")).at(262).at(0), 6LL);
+    // the JDK writes no PlanarConfiguration, leaving the default of chunky samples
+    CHECK_EQUAL(tiffTags(readFile("NONE-1.tiff")).count(284), size_t(0));
 }
 
 // A half transparent red square stays red at half opacity, in a PNG (written by MuPDF) and a TIFF.
@@ -224,8 +226,9 @@ TEST(main_tiffOutputReplacesAnExistingFile) {
     // -oi gives the file the extension tiff
     runCli({in, "-oi", std::filesystem::absolute("named.tif")});
     CHECK(std::filesystem::is_regular_file("named.tiff"));
-    CHECK_EQUAL(cliError({in, "-oi", std::filesystem::absolute("star*.tiff")}),
-                std::string("TIFF multipage filename should not contain *"));
+    // Java's check of the output name fails first on Windows, so its message about * in a
+    // multipage TIFF name never shows there
+    CHECK_EQUAL(cliError({in, "-oi", std::filesystem::absolute("star*.tiff")}), std::string("Bad pathname"));
 }
 
 // The JDK's TIFF writer cannot JPEG-compress an image with an alpha channel (decision 3).
