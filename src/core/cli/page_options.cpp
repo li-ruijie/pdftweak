@@ -189,8 +189,8 @@ public:
             return false;
         }
         enabled_ = true;
-        width_ = static_cast<float>(javaParseDouble(m[1].str()));
-        height_ = static_cast<float>(javaParseDouble(m[2].str()));
+        width_ = javaParseFloat(m[1].str());
+        height_ = javaParseFloat(m[2].str());
         const std::string opts = m[3].matched ? m[3].str() : std::string();
         center_ = opts.find('c') != std::string::npos;
         preserveRatio_ = opts.find('r') == std::string::npos;

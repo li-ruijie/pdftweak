@@ -235,7 +235,7 @@ OutlineRange iterateOutlines(QPDF& pdf, QPDFObjectHandle parent, const std::vect
                 const std::vector<std::string> tk = tokens(*color);
                 QPDFObjectHandle array = QPDFObjectHandle::newArray();
                 for (size_t k = 0; k < 3; ++k) {
-                    float f = static_cast<float>(javaParseDouble(javaTrim(tk.at(k))));
+                    float f = javaParseFloat(javaTrim(tk.at(k)));
                     f = std::clamp(f, 0.0f, 1.0f);
                     array.appendItem(itextNumberObject(f));
                 }

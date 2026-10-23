@@ -16,6 +16,7 @@
 #include "core/java_text.h"
 #include "core/text.h"
 
+#include <cmath>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -77,6 +78,50 @@ TEST(unit_javaFloatPrintsLikeJava) {
     CHECK_EQUAL(javaDouble(0.1 + 0.2), std::string("0.30000000000000004"));
     CHECK_EQUAL(javaDouble(1.5e-4), std::string("1.5E-4"));
     CHECK_EQUAL(javaDouble(2e23), std::string("2.0E23"));
+}
+
+namespace {
+
+std::string parseError(double (*parse)(std::string_view), std::string_view text) {
+    try {
+        parse(text);
+    } catch (const Error& error) {
+        return error.what();
+    }
+    return "no error";
+}
+
+double parseFloatAsDouble(std::string_view text) { return javaParseFloat(text); }
+
+} // namespace
+
+// Double.parseDouble and Float.parseFloat: Java's grammar of floating-point literals, with NaN and
+// Infinity spelt as Java spells them, the f and d suffixes, hexadecimal significands, overflow to
+// infinity, and floats rounded once from the decimal.
+TEST(unit_javaParseDoubleFollowsJava) {
+    CHECK_EQUAL(javaParseDouble(" 1e3 "), 1000.0);
+    CHECK_EQUAL(javaParseDouble(".5"), 0.5);
+    CHECK_EQUAL(javaParseDouble("1."), 1.0);
+    CHECK_EQUAL(javaParseDouble("+2"), 2.0);
+    CHECK_EQUAL(javaParseDouble("1.5f"), 1.5);
+    CHECK_EQUAL(javaParseDouble("2D"), 2.0);
+    CHECK_EQUAL(javaParseDouble("0x1p4"), 16.0);
+    CHECK_EQUAL(javaParseDouble("-0X1.8P1d"), -3.0);
+    CHECK(std::isnan(javaParseDouble("NaN")) && std::isnan(javaParseDouble("-NaN")));
+    CHECK_EQUAL(javaParseDouble("-Infinity"), -INFINITY);
+    CHECK_EQUAL(javaParseDouble("1e400"), INFINITY);
+    CHECK_EQUAL(javaParseDouble("-1e-400"), 0.0);
+    CHECK(std::signbit(javaParseDouble("-1e-400")));
+    for (const char* text :
+         {"inf", "nan", "infinity", "Infinityf", "1e", "e5", "1.5ff", "0x10", "0x", "1 2", "."})
+        CHECK_EQUAL(parseError(javaParseDouble, text), "For input string: \"" + std::string(text) + "\"");
+    CHECK_EQUAL(parseError(javaParseDouble, "  "), std::string("empty String"));
+    CHECK_EQUAL(parseError(parseFloatAsDouble, "x"), std::string("For input string: \"x\""));
+    CHECK_EQUAL(javaParseFloat("0.1"), 0.1f);
+    CHECK_EQUAL(javaParseFloat("1e39"), INFINITY);
+    // just below the midpoint of two floats whose upper one is even, where rounding through a double
+    // would reach the midpoint and then round up
+    CHECK_EQUAL(javaParseFloat("1.0000001788139343261718749"), std::nextafter(1.0f, 2.0f));
 }
 
 TEST(unit_javaFormatSubset) {

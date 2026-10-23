@@ -7,6 +7,8 @@
 #include <charconv>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <limits>
 #include <string>
 
 namespace pdftweak {
@@ -204,27 +206,96 @@ int javaParseInt(std::string_view text) {
     return static_cast<int>(value);
 }
 
-double javaParseDouble(std::string_view text) {
-    // Java trims white space and accepts a leading sign, digits with an optional point, and an
-    // exponent. Hexadecimal and the d and f suffixes are not used by the formats ported here.
+namespace {
+
+bool isDigit(char c) { return c >= '0' && c <= '9'; }
+bool isHexDigit(char c) { return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
+
+// FloatingDecimal.readJavaFormatString: white space trimmed, an optional sign, then NaN, Infinity,
+// a decimal significand with an optional exponent, or 0x and a hexadecimal significand with a
+// binary exponent, each of the last two with an optional f, F, d, or D. Returns the value as T,
+// rounded once from the text.
+template <typename T> T parseJavaFloating(std::string_view text) {
     size_t a = 0, b = text.size();
     while (a < b && static_cast<unsigned char>(text[a]) <= ' ')
         ++a;
     while (b > a && static_cast<unsigned char>(text[b - 1]) <= ' ')
         --b;
-    const std::string trimmed(text.substr(a, b - a));
-    const std::string message =
-        trimmed.empty() ? "empty String" : "For input string: \"" + std::string(text) + "\"";
-    double value = 0;
-    const char* first = trimmed.data();
-    const char* last = trimmed.data() + trimmed.size();
-    if (first != last && *first == '+')
-        ++first;
-    const auto r = std::from_chars(first, last, value);
-    if (trimmed.empty() || r.ec != std::errc() || r.ptr != last)
-        throw Error(Error::Kind::Document, message);
-    return value;
+    std::string_view s = text.substr(a, b - a);
+    if (s.empty())
+        throw Error(Error::Kind::Document, "empty String");
+    const auto refuse = [&]() -> T {
+        throw Error(Error::Kind::Document, "For input string: \"" + std::string(text) + "\"");
+    };
+    bool negative = false;
+    if (s[0] == '+' || s[0] == '-') {
+        negative = s[0] == '-';
+        s.remove_prefix(1);
+    }
+    if (s == "NaN")
+        return std::numeric_limits<T>::quiet_NaN();
+    if (s == "Infinity")
+        return negative ? -std::numeric_limits<T>::infinity() : std::numeric_limits<T>::infinity();
+    if (!s.empty() && std::string_view("fFdD").find(s.back()) != std::string_view::npos)
+        s.remove_suffix(1);
+    size_t i = 0;
+    bool hex = false;
+    if (s.size() >= 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+        // 0x, hexadecimal digits with an optional point, at least one of them, then p and an exponent
+        hex = true;
+        s.remove_prefix(2);
+        size_t digits = 0;
+        while (i < s.size() && isHexDigit(s[i]))
+            ++i, ++digits;
+        if (i < s.size() && s[i] == '.')
+            for (++i; i < s.size() && isHexDigit(s[i]); ++i)
+                ++digits;
+        if (digits == 0 || i >= s.size() || (s[i] != 'p' && s[i] != 'P'))
+            return refuse();
+    } else {
+        size_t digits = 0;
+        while (i < s.size() && isDigit(s[i]))
+            ++i, ++digits;
+        if (i < s.size() && s[i] == '.')
+            for (++i; i < s.size() && isDigit(s[i]); ++i)
+                ++digits;
+        if (digits == 0)
+            return refuse();
+        if (i < s.size() && s[i] != 'e' && s[i] != 'E')
+            return refuse();
+    }
+    if (i < s.size()) {
+        // the exponent: a sign and at least one decimal digit
+        size_t j = i + 1;
+        if (j < s.size() && (s[j] == '+' || s[j] == '-'))
+            ++j;
+        const size_t first = j;
+        while (j < s.size() && isDigit(s[j]))
+            ++j;
+        if (j == first || j != s.size())
+            return refuse();
+    }
+    T value = 0;
+    const auto result = std::from_chars(s.data(), s.data() + s.size(), value,
+                                        hex ? std::chars_format::hex : std::chars_format::general);
+    if (result.ptr != s.data() + s.size())
+        return refuse();
+    if (result.ec == std::errc::result_out_of_range) {
+        // from_chars leaves the value alone when it overflows to infinity or underflows to zero
+        const std::string normalized = (hex ? "0x" : "") + std::string(s);
+        const double rough = std::strtod(normalized.c_str(), nullptr);
+        value = std::fabs(rough) >= 1 ? std::numeric_limits<T>::infinity() : T(0);
+    } else if (result.ec != std::errc()) {
+        return refuse();
+    }
+    return negative ? -value : value;
 }
+
+} // namespace
+
+double javaParseDouble(std::string_view text) { return parseJavaFloating<double>(text); }
+
+float javaParseFloat(std::string_view text) { return parseJavaFloating<float>(text); }
 
 std::string javaFormat(std::string_view mask, std::span<const FormatArg> args) {
     std::string out;

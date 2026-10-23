@@ -14,10 +14,11 @@ namespace pdftweak {
 std::string javaFloat(float value);
 std::string javaDouble(double value);
 
-// Integer.parseInt and Double.parseDouble. Both throw Error(Document) with Java's
+// Integer.parseInt, Double.parseDouble, and Float.parseFloat. All throw Error(Document) with Java's
 // NumberFormatException message, such as: For input string: "x"
 int javaParseInt(std::string_view text);
 double javaParseDouble(std::string_view text);
+float javaParseFloat(std::string_view text);
 
 // String.split on one literal character. Java drops trailing empty pieces unless the limit is
 // negative (keepTrailingEmpty), and splitting an empty string gives one empty piece.

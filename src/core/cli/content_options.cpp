@@ -70,7 +70,7 @@ public:
             }
             text_ = m[1].str();
             textSize_ = javaParseInt(m[2].str());
-            textOpacity_ = static_cast<float>(javaParseDouble(m[3].str()));
+            textOpacity_ = javaParseFloat(m[3].str());
             if (m[4].matched) {
                 const std::string color = m[4].str();
                 textColor_ = std::array<int, 3>{std::stoi(color.substr(2, 2), nullptr, 16),
