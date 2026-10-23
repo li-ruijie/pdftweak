@@ -5,6 +5,7 @@
 // goes to one of two alternating files and is read back from it, otherwise it stays in memory.
 
 #include "core/formats/page_range.h"
+#include "core/formats/shuffle_rule.h"
 #include "core/pdf/input_file.h"
 #include "core/progress.h"
 
@@ -15,6 +16,9 @@
 #include <vector>
 
 namespace pdftweak::pdf {
+
+// PdfTweak.PageBox: the page boxes a crop can use, each falling back to another when a page lacks it.
+enum class PageBox { MediaBox, CropBox, BleedBox, TrimBox, ArtBox };
 
 // PdfPageRange: pages of one input file.
 struct InputRange {
@@ -38,6 +42,25 @@ public:
 
     int pageCount() const;
     QPDF& current() { return *current_; }
+
+    // cropPages: each page cut to the given box (or its fallback), keeping its /Rotate.
+    void cropPages(PageBox cropTo);
+
+    // rotatePages: /Rotate turned by 90 degrees count times, separately for portrait and landscape.
+    void rotatePages(int portraitCount, int landscapeCount);
+
+    // removeRotation: each rotated page drawn upright on a page of its rotated size.
+    void removeRotation();
+
+    // scalePages: each page drawn on a page of the new size, scaled to fit (not above 1 with
+    // noEnlarge, and with equal factors with preserveAspectRatio) and centred.
+    void scalePages(float newWidth, float newHeight, bool noEnlarge, bool preserveAspectRatio);
+
+    // shufflePages: pages placed by the rules of a rule set, in passes over blocks.
+    void shufflePages(const formats::RuleSet& rules);
+
+    // preserveHyperlinks: the page operations copy link annotations from now on.
+    void preserveHyperlinks() { preserveHyperlinks_ = true; }
 
     // updateInfoDictionary: sets each (key, value) in the Info dictionary, in the given order, where
     // an empty value removes the key, and removes the XMP metadata.
@@ -81,6 +104,7 @@ private:
     int encryptionPermissions_ = -1;
     std::string userPassword_;
     std::string ownerPassword_;
+    bool preserveHyperlinks_ = false;
 };
 
 } // namespace pdftweak::pdf

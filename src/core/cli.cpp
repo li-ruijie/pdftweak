@@ -295,6 +295,11 @@ namespace cli {
 
 std::vector<std::unique_ptr<CommandOption>> buildOptions() {
     std::vector<std::unique_ptr<CommandOption>> options;
+    options.push_back(makePreserveHyperlinksOption());
+    options.push_back(makeCropOption());
+    options.push_back(makeRotateOption());
+    options.push_back(makeScaleOption());
+    options.push_back(makeShuffleOption());
     options.push_back(makeDocInfoOption());
     options.push_back(makeEncryptOptions());
     options.push_back(makeInfoOption());

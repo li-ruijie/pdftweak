@@ -53,6 +53,13 @@ int pageRotation(QPDFObjectHandle page);
 // PdfReader.getPageSizeWithRotation: the page size turned by the rotation of the page.
 Rect pageSizeWithRotation(QPDFObjectHandle page);
 
+// Copies an object of another document into to: indirect objects through copyForeignObject, which
+// maps each one once per destination, and direct dictionaries and arrays element by element.
+QPDFObjectHandle copyFrom(QPDF& to, QPDFObjectHandle object);
+
+// A number as iText writes it (ByteBuffer.formatDouble), as a qpdf object.
+QPDFObjectHandle itextNumberObject(double value);
+
 // Inside a catch block, rethrows the current exception as pdftweak::Error. Errors and Cancelled pass
 // unchanged, qpdf's password failure becomes iText's "Bad user password", and other exceptions keep
 // their message.

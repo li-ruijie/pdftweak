@@ -46,3 +46,7 @@ LICENSE.
 - Keep every catalog entry and annotation when optimising for size, where Java rebuilt the document
 - Grant ScreenReaders under revision 4 encryption and treat HQPrinting without Printing as no
   printing, as ISO 32000-2 requires, where Java wrote the bits as given
+- Port cropping, rotation, scaling, and shuffling. As in jPDF Tweak 1.3.0, these keep bookmarks,
+  named destinations, attachments, viewer settings, the open action, the language, optional content,
+  and (except shuffling) page labels, with destinations moved to the first page that shows their
+  target, and links with null coordinates no longer fail

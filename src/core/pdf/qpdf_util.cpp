@@ -1,6 +1,7 @@
 #include "core/pdf/qpdf_util.h"
 
 #include "core/error.h"
+#include "core/java_text.h"
 #include "core/progress.h"
 #include "core/text.h"
 
@@ -91,6 +92,31 @@ Rect pageSizeWithRotation(QPDFObjectHandle page) {
     for (int rotation = pageRotation(page); rotation > 0; rotation -= 90)
         r = {r.lly, r.llx, r.ury, r.urx};
     return r;
+}
+
+QPDFObjectHandle copyFrom(QPDF& to, QPDFObjectHandle object) {
+    if (object.isIndirect())
+        return to.copyForeignObject(object);
+    if (object.isDictionary()) {
+        QPDFObjectHandle copy = QPDFObjectHandle::newDictionary();
+        for (const std::string& key : object.getKeys())
+            copy.replaceKey(key, copyFrom(to, object.getKey(key)));
+        return copy;
+    }
+    if (object.isArray()) {
+        QPDFObjectHandle copy = QPDFObjectHandle::newArray();
+        for (int i = 0; i < object.getArrayNItems(); ++i)
+            copy.appendItem(copyFrom(to, object.getArrayItem(i)));
+        return copy;
+    }
+    return QPDFObjectHandle::parse(object.unparse());
+}
+
+QPDFObjectHandle itextNumberObject(double value) {
+    const std::string text = itextNumber(value);
+    if (text.find('.') == std::string::npos)
+        return QPDFObjectHandle::newInteger(std::stoll(text));
+    return QPDFObjectHandle::newReal(text);
 }
 
 void rethrowAsError() {

@@ -26,6 +26,11 @@ public:
     virtual bool queried() const { return false; }
 };
 
+std::unique_ptr<CommandOption> makePreserveHyperlinksOption();
+std::unique_ptr<CommandOption> makeCropOption();
+std::unique_ptr<CommandOption> makeRotateOption();
+std::unique_ptr<CommandOption> makeScaleOption();
+std::unique_ptr<CommandOption> makeShuffleOption();
 std::unique_ptr<CommandOption> makeDocInfoOption();
 std::unique_ptr<CommandOption> makeEncryptOptions();
 std::unique_ptr<CommandOption> makeInfoOption();

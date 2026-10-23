@@ -51,6 +51,7 @@
     <ClInclude Include="pdf\input_file.h" />
     <ClInclude Include="pdf\outline.h" />
     <ClInclude Include="pdf\qpdf_util.h" />
+    <ClInclude Include="pdf\rebuild.h" />
     <ClInclude Include="pdf\tweak.h" />
     <ClInclude Include="progress.h" />
     <ClInclude Include="text.h" />
@@ -61,6 +62,7 @@
     <ClCompile Include="cli\docinfo_option.cpp" />
     <ClCompile Include="cli\encrypt_options.cpp" />
     <ClCompile Include="cli\info_option.cpp" />
+    <ClCompile Include="cli\page_options.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="formats\bookmark.cpp" />
     <ClCompile Include="formats\integer_list.cpp" />
@@ -78,8 +80,10 @@
     <ClCompile Include="pdf\input_file.cpp" />
     <ClCompile Include="pdf\outline.cpp" />
     <ClCompile Include="pdf\qpdf_util.cpp" />
+    <ClCompile Include="pdf\rebuild.cpp" />
     <ClCompile Include="pdf\tweak.cpp" />
     <ClCompile Include="pdf\tweak_output.cpp" />
+    <ClCompile Include="pdf\tweak_pages.cpp" />
     <ClCompile Include="text.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

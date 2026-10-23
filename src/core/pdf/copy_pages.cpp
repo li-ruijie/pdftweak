@@ -39,14 +39,6 @@ void clearDestination(QPDFObjectHandle dest, const std::set<QPDFObjGen>& pages) 
     }
 }
 
-// A value of another document: indirect objects through copyForeignObject, direct ones (strings,
-// numbers, and the like in an Info dictionary) by value.
-QPDFObjectHandle copyValue(QPDF& to, QPDFObjectHandle value) {
-    if (value.isIndirect())
-        return to.copyForeignObject(value);
-    return QPDFObjectHandle::parse(value.unparseResolved());
-}
-
 } // namespace
 
 PageCopier::PageCopier() : out_(emptyDocument()), outForm_(*out_) {}
@@ -111,7 +103,7 @@ void copyInformation(QPDF& from, QPDF& to) {
     QPDFObjectHandle source = from.getTrailer().getKey("/Info");
     if (source.isDictionary())
         for (const std::string& key : source.getKeys())
-            info.replaceKey(key, copyValue(to, source.getKey(key)));
+            info.replaceKey(key, copyFrom(to, source.getKey(key)));
     to.getTrailer().replaceKey("/Info", to.makeIndirectObject(info));
     completeNewInformation(to);
 }
