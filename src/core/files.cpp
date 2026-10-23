@@ -1,9 +1,13 @@
 #include "core/files.h"
 
 #include "core/error.h"
+#include "core/java_text.h"
 #include "core/text.h"
 
 #include <windows.h>
+
+#include <fstream>
+#include <iterator>
 
 namespace pdftweak {
 
@@ -43,6 +47,30 @@ void createForWriting(const std::filesystem::path& path, const std::string& name
     if (file == INVALID_HANDLE_VALUE)
         throw Error(Error::Kind::Io, name + " (" + systemMessage(GetLastError()) + ")");
     CloseHandle(file);
+}
+
+std::vector<std::string> readLines(const std::string& file) {
+    std::ifstream in(std::filesystem::path(fromUtf8(file)), std::ios::binary);
+    if (!in)
+        throw Error(Error::Kind::Io, file + " (The system cannot find the file specified)");
+    const std::string text =
+        javaUtf8Decode(std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()));
+    std::vector<std::string> lines;
+    std::string line;
+    for (size_t i = 0; i < text.size(); ++i) {
+        const char c = text[i];
+        if (c == '\n' || c == '\r') {
+            lines.push_back(line);
+            line.clear();
+            if (c == '\r' && i + 1 < text.size() && text[i + 1] == '\n')
+                ++i;
+        } else {
+            line += c;
+        }
+    }
+    if (!line.empty())
+        lines.push_back(line);
+    return lines;
 }
 
 } // namespace pdftweak

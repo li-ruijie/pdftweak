@@ -1,6 +1,7 @@
 // SignOptions: -sign, -signvisible, -keystore, -keyalias, and -certlevel.
 
 #include "core/cli/command_option.h"
+#include "core/sign/signing_key.h"
 
 #include "core/java_text.h"
 #include "core/text.h"
@@ -11,17 +12,6 @@
 
 namespace pdftweak::cli {
 namespace {
-
-// new File(System.getProperty("user.home"), ".keystore").getAbsolutePath()
-std::string defaultKeystore() {
-    wchar_t* profile = nullptr;
-    size_t size = 0;
-    std::wstring home;
-    if (_wdupenv_s(&profile, &size, L"USERPROFILE") == 0 && profile != nullptr)
-        home = profile;
-    free(profile);
-    return toUtf8((std::filesystem::path(home) / L".keystore").wstring());
-}
 
 class SignOptions final : public CommandOption {
 public:
@@ -82,7 +72,7 @@ public:
     }
 
 private:
-    std::string keystore_ = defaultKeystore();
+    std::string keystore_ = toUtf8(sign::defaultKeystore());
     std::string alias_ = "mykey";
     int certLevel_ = 0;
     bool visible_ = false;

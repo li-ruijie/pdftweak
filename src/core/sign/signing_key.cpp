@@ -8,6 +8,7 @@
 #include <ncrypt.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <cwctype>
 #include <filesystem>
 #include <fstream>
@@ -18,6 +19,16 @@
 #pragma comment(lib, "ncrypt.lib")
 
 namespace pdftweak::sign {
+
+std::wstring defaultKeystore() {
+    wchar_t* profile = nullptr;
+    size_t size = 0;
+    std::wstring home;
+    if (_wdupenv_s(&profile, &size, L"USERPROFILE") == 0 && profile != nullptr)
+        home = profile;
+    free(profile);
+    return (std::filesystem::path(home) / L".keystore").wstring();
+}
 namespace {
 
 std::wstring lower(std::wstring text) {

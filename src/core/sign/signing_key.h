@@ -9,6 +9,10 @@
 
 namespace pdftweak::sign {
 
+// new File(System.getProperty("user.home"), ".keystore").getAbsolutePath(), the keystore that the
+// command line and the Encrypt/Sign tab start with.
+std::wstring defaultKeystore();
+
 // The distinguished name of the signer, as MuPDF shows it in a visible signature.
 struct DistinguishedName {
     std::string cn, o, ou, email, c;

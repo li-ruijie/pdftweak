@@ -4,6 +4,7 @@
 #include "core/cli/command_option.h"
 
 #include "core/error.h"
+#include "core/files.h"
 #include "core/formats/bookmark.h"
 #include "core/formats/page_labels.h"
 #include "core/formats/tables.h"
@@ -20,32 +21,6 @@
 
 namespace pdftweak::cli {
 namespace {
-
-// BufferedReader.readLine over a file read as UTF-8: lines end at \n, \r, or \r\n, and a last line
-// without an end counts when it is not empty. A missing file throws as FileInputStream does.
-std::vector<std::string> readLines(const std::string& file) {
-    std::ifstream in(std::filesystem::path(fromUtf8(file)), std::ios::binary);
-    if (!in)
-        throw Error(Error::Kind::Io, file + " (The system cannot find the file specified)");
-    const std::string text =
-        javaUtf8Decode(std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()));
-    std::vector<std::string> lines;
-    std::string line;
-    for (size_t i = 0; i < text.size(); ++i) {
-        const char c = text[i];
-        if (c == '\n' || c == '\r') {
-            lines.push_back(line);
-            line.clear();
-            if (c == '\r' && i + 1 < text.size() && text[i + 1] == '\n')
-                ++i;
-        } else {
-            line += c;
-        }
-    }
-    if (!line.empty())
-        lines.push_back(line);
-    return lines;
-}
 
 std::string underscores(std::string text) {
     std::replace(text.begin(), text.end(), ' ', '_');

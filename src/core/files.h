@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 namespace pdftweak {
 
@@ -17,5 +18,9 @@ void checkCanonical(const std::filesystem::path& path);
 // new FileOutputStream(name): creates or empties the file, or throws Error(Io, "<name> (<system
 // message>)") as Java's FileNotFoundException said, with the name as it was given.
 void createForWriting(const std::filesystem::path& path, const std::string& name);
+
+// BufferedReader.readLine over a file read as UTF-8: lines end at \n, \r, or \r\n, and a last line
+// without an end counts when it is not empty. A missing file throws Error(Io) as FileInputStream does.
+std::vector<std::string> readLines(const std::string& file);
 
 } // namespace pdftweak
