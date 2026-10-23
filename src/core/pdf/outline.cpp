@@ -3,6 +3,7 @@
 #include "core/error.h"
 #include "core/java_text.h"
 #include "core/pdf/qpdf_util.h"
+#include "core/pdf/tweak.h"
 #include "core/text.h"
 
 #include <map>
@@ -273,6 +274,35 @@ std::vector<formats::Bookmark> readBookmarks(QPDF& pdf, int initialDepth) {
     std::set<QPDFObjGen> seen;
     for (const Item& item : bookmarkDepth(outlines.getKey("/First"), pageNumbers, seen))
         fillInBookmark(result, item, initialDepth);
+    return result;
+}
+
+std::vector<formats::Bookmark> buildBookmarks(const std::vector<InputRange>& ranges) {
+    int offset = 0;
+    std::vector<formats::Bookmark> result;
+    for (const InputRange& range : ranges) {
+        const std::vector<int> pages = range.range.pages(offset);
+        int initialEmptyPages = 0;
+        while (initialEmptyPages < static_cast<int>(pages.size()) &&
+               pages[static_cast<size_t>(initialEmptyPages)] == -1)
+            ++initialEmptyPages;
+        result.push_back(formats::makeBookmark(1, toUtf8(range.file->file().filename().wstring()), true,
+                                               offset + 1 + initialEmptyPages, "", false, false, ""));
+        for (formats::Bookmark bookmark : readBookmarks(*range.file->qpdf(), 2)) {
+            int realOffset = offset;
+            for (size_t i = 0; i < pages.size(); ++i) {
+                if (pages[i] == bookmark.page) {
+                    realOffset += static_cast<int>(i) + 1 - bookmark.page;
+                    break;
+                }
+            }
+            // shiftPageNumber leaves a bookmark without a page as it is
+            if (bookmark.page != 0)
+                bookmark.page += realOffset;
+            result.push_back(std::move(bookmark));
+        }
+        offset += static_cast<int>(pages.size());
+    }
     return result;
 }
 

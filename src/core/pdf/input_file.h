@@ -27,6 +27,10 @@ public:
 
     int pageCount() const;
 
+    // PdfInputFile.reopen: reads the file again with the same password, dropping the changes a run
+    // made to the document.
+    void reopen();
+
     // PdfInputFile.getPageSize: the size of a page (1-based) with its rotation applied.
     Rect pageSize(int page) const;
 

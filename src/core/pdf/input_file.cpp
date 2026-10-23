@@ -347,7 +347,11 @@ int revision(QPDF& pdf) {
 
 InputFile::InputFile(std::filesystem::path file, const std::string& password)
     : file_(std::move(file)), ownerPassword_(password) {
-    pdf_ = openFile(file_, toLatin1(password));
+    reopen();
+}
+
+void InputFile::reopen() {
+    pdf_ = openFile(file_, toLatin1(ownerPassword_));
     try {
         if (pdf_->isEncrypted() && !pdf_->ownerPasswordMatched())
             throw Error(Error::Kind::BadPassword, "PdfReader not opened with owner password");

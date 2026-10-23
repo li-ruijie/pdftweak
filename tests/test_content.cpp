@@ -13,6 +13,7 @@
 #include "core/pdf/helvetica.h"
 #include "core/pdf/input_file.h"
 #include "core/pdf/outline.h"
+#include "core/pdf/tweak.h"
 
 #include <qpdf/Buffer.hh>
 #include <qpdf/QPDF.hh>
@@ -236,6 +237,37 @@ TEST(main_bookmarkOptionsKeepTheirOrder) {
     const auto outline = pdftweak::pdf::readBookmarks(*qpdf, 1);
     CHECK_EQUAL(outline.size(), size_t(1));
     CHECK_EQUAL(outline.at(0).title, std::string("Chapter"));
+}
+
+// PdfBookmark.buildBookmarks, which the Bookmarks tab loads for multiple input files: each range gets
+// a bookmark named after its file, over the file's own bookmarks moved to where the range puts them.
+// Bookmarks without children read back open, as iText reads them.
+TEST(main_bookmarksOfPageRangesFollowTheRanges) {
+    const auto a = pdfOfSizes(".", "a.pdf", {kA4, kA4, kA4});
+    const auto b = pdfOfSizes(".", "b.pdf", {kA4, kA4});
+    runCli({a, "-bookmark", "1;;A1;2", "-bookmark", "2;;A1x;3", "a-marked.pdf"});
+    runCli({b, "-bookmark", "1;;B;1", "b-marked.pdf"});
+    const auto fileA = std::make_shared<pdftweak::pdf::InputFile>("a-marked.pdf", "");
+    const auto fileB = std::make_shared<pdftweak::pdf::InputFile>("b-marked.pdf", "");
+    const std::vector<pdftweak::pdf::InputRange> ranges{
+        {fileA, pdftweak::formats::makePageRange(0, 3, 3, 1, true, true, {0})},
+        {fileB, pdftweak::formats::makePageRange(1, 2, 1, -1, true, true, {1})}};
+    std::vector<std::string> lines;
+    for (const auto& bookmark : pdftweak::pdf::buildBookmarks(ranges))
+        lines.push_back(std::to_string(bookmark.depth) + " " + bookmark.title + " " +
+                        std::to_string(bookmark.page) + (bookmark.open ? " open" : ""));
+    CHECK(lines == (std::vector<std::string>{"1 a-marked.pdf 1 open", "2 A1 2", "3 A1x 1 open",
+                                             "1 b-marked.pdf 5 open", "2 B 5 open"}));
+}
+
+// PdfInputFile.reopen reads the file again, so that a run starts from the file and not from the
+// document an earlier run changed.
+TEST(main_inputFileReopenReadsTheFileAgain) {
+    pdftweak::pdf::InputFile file(pdfOfSizes(".", "in.pdf", {kA4}), "");
+    file.qpdf()->getRoot().replaceKey("/Changed", QPDFObjectHandle::newInteger(1));
+    file.reopen();
+    CHECK(!file.qpdf()->getRoot().hasKey("/Changed"));
+    CHECK_EQUAL(file.pageCount(), 1);
 }
 
 TEST(main_bookmarkActionsAndColours) {
