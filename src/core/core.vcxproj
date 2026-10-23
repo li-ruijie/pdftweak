@@ -42,6 +42,7 @@
     <ClInclude Include="formats\shuffle_rule.h" />
     <ClInclude Include="formats\tables.h" />
     <ClInclude Include="formats\viewer_preferences.h" />
+    <ClInclude Include="formats\xmp.h" />
     <ClInclude Include="java_text.h" />
     <ClInclude Include="libraries.h" />
     <ClInclude Include="progress.h" />
@@ -59,6 +60,7 @@
     <ClCompile Include="formats\shuffle_rule.cpp" />
     <ClCompile Include="formats\tables.cpp" />
     <ClCompile Include="formats\viewer_preferences.cpp" />
+    <ClCompile Include="formats\xmp.cpp" />
     <ClCompile Include="java_text.cpp" />
     <ClCompile Include="libraries.cpp" />
     <ClCompile Include="text.cpp" />

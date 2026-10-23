@@ -12,6 +12,7 @@
 #include "core/formats/shuffle_rule.h"
 #include "core/formats/tables.h"
 #include "core/formats/viewer_preferences.h"
+#include "core/formats/xmp.h"
 #include "core/java_text.h"
 #include "core/text.h"
 
@@ -323,4 +324,47 @@ TEST(unit_javaHashMapOrderMatchesJava) {
                             "Custom2,Custom1,Producer,\u00DCber,Author,ModDate,Trapped"));
     CHECK_EQUAL(hashOrder({"Color", "Style", "URI", "Action", "Named", "File", "NewWindow", "Rect"}),
                 std::string("Named,Action,Rect,NewWindow,Color,Style,URI,File"));
+}
+
+TEST(unit_xmpPropertiesAreUpdatedInPlace) {
+    const std::string date = "2026-10-24T09:30:00+08:00";
+    const std::string element =
+        "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF "
+        "xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">"
+        "<rdf:Description rdf:about=\"\" xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\">"
+        "<pdf:Producer>Acrobat</pdf:Producer><pdf:Keywords>k</pdf:Keywords></rdf:Description>"
+        "<rdf:Description rdf:about=\"\" xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\">"
+        "<xmp:ModifyDate>2001-01-01</xmp:ModifyDate><xmp:CreateDate>2001-01-01</xmp:CreateDate>"
+        "</rdf:Description></rdf:RDF></x:xmpmeta>";
+    const auto updated = updateXmpPacket(element, std::string("A & B"), date);
+    CHECK(updated.has_value());
+    CHECK(updated->find("<pdf:Producer>A &amp; B</pdf:Producer>") != std::string::npos);
+    CHECK(updated->find("<xmp:ModifyDate>" + date + "</xmp:ModifyDate>") != std::string::npos);
+    CHECK(updated->find("<xmp:CreateDate>2001-01-01</xmp:CreateDate>") != std::string::npos);
+    CHECK(updated->find("MetadataDate") == std::string::npos); // never added
+
+    // attribute form, with prefixes that are not the usual ones
+    const std::string attributes =
+        "<rdf:Description rdf:about=\"\" xmlns:p13=\"http://ns.adobe.com/pdf/1.3/\" "
+        "xmlns:xap='http://ns.adobe.com/xap/1.0/' p13:Producer=\"Old\" xap:MetadataDate='1999' "
+        "xap:ModifyDateX=\"keep\"/>";
+    const auto changed = updateXmpPacket(attributes, std::string("Say \"hi\""), date);
+    CHECK(changed.has_value());
+    CHECK(changed->find("p13:Producer=\"Say &quot;hi&quot;\"") != std::string::npos);
+    CHECK(changed->find("xap:MetadataDate='" + date + "'") != std::string::npos);
+    CHECK(changed->find("xap:ModifyDateX=\"keep\"") != std::string::npos);
+
+    // Producer left alone when the document information has none
+    const auto noProducer = updateXmpPacket(attributes, std::nullopt, date);
+    CHECK(noProducer.has_value() && noProducer->find("p13:Producer=\"Old\"") != std::string::npos);
+
+    // a property in another form, and a packet that is not UTF-8, stay as they are
+    const std::string nested =
+        "<r xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"><pdf:Producer><rdf:Alt><rdf:li "
+        "xml:lang=\"x-default\">P</rdf:li></rdf:Alt></pdf:Producer></r>";
+    CHECK(!updateXmpPacket(nested, std::string("New"), date).has_value());
+    CHECK(!updateXmpPacket(
+               "<r xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"><pdf:Producer>\xE9</pdf:Producer></r>",
+               std::string("New"), date)
+               .has_value());
 }
