@@ -313,6 +313,7 @@ std::vector<std::unique_ptr<CommandOption>> buildOptions() {
     options.push_back(makeViewerOptions());
     options.push_back(makeDocInfoOption());
     options.push_back(makeEncryptOptions());
+    options.push_back(makeSignOptions());
     options.push_back(makeInfoOption());
     options.push_back(makeBurstImagesOption());
     return options;

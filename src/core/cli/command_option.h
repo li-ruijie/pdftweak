@@ -39,6 +39,7 @@ std::unique_ptr<CommandOption> makeTransitionOption();
 std::unique_ptr<CommandOption> makeViewerOptions();
 std::unique_ptr<CommandOption> makeDocInfoOption();
 std::unique_ptr<CommandOption> makeEncryptOptions();
+std::unique_ptr<CommandOption> makeSignOptions();
 std::unique_ptr<CommandOption> makeInfoOption();
 std::unique_ptr<CommandOption> makeBurstImagesOption();
 

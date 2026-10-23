@@ -59,6 +59,7 @@
     <ClInclude Include="pdf\stamper.h" />
     <ClInclude Include="pdf\tweak.h" />
     <ClInclude Include="progress.h" />
+    <ClInclude Include="sign\signing_key.h" />
     <ClInclude Include="text.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
@@ -70,6 +71,7 @@
     <ClCompile Include="cli\image_options.cpp" />
     <ClCompile Include="cli\info_option.cpp" />
     <ClCompile Include="cli\page_options.cpp" />
+    <ClCompile Include="cli\sign_options.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="formats\bookmark.cpp" />
     <ClCompile Include="formats\integer_list.cpp" />
@@ -99,6 +101,7 @@
     <ClCompile Include="pdf\tweak_content.cpp" />
     <ClCompile Include="pdf\tweak_output.cpp" />
     <ClCompile Include="pdf\tweak_pages.cpp" />
+    <ClCompile Include="sign\signing_key.cpp" />
     <ClCompile Include="text.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

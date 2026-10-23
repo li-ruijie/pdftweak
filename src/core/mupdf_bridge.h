@@ -8,6 +8,10 @@
 #include <string>
 #include <vector>
 
+namespace pdftweak::sign {
+class SigningKey;
+}
+
 namespace pdftweak::mupdf {
 
 // "Optimise size": writes the PDF again with MuPDF's garbage collection at level 3, which renumbers
@@ -49,5 +53,12 @@ private:
     struct State;
     std::unique_ptr<State> state_;
 };
+
+// Signing (spec section 7). Opens the finished PDF file, with the owner password when it is
+// encrypted, adds the signature field SignatureN (the first free N) to page 1 at [100 100 200 200]
+// when visible and with an empty rectangle otherwise, signs it with the key, certifies it at the
+// level (1 to 3) when it is above 0, and appends the signature to the file as an incremental update.
+void signFile(const std::string& utf8Path, const std::string& ownerPassword, const sign::SigningKey& key,
+              bool visible, int certificationLevel);
 
 } // namespace pdftweak::mupdf

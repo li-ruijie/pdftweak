@@ -11,6 +11,7 @@
 #include "core/image/pdf_to_image.h"
 #include "core/pdf/input_file.h"
 #include "core/progress.h"
+#include "core/sign/signing_key.h"
 
 #include <array>
 #include <filesystem>
@@ -98,6 +99,11 @@ public:
     void setViewerPreferences(int simplePrefs,
                               const std::vector<std::pair<std::string, std::string>>& optionalPrefs);
 
+    // setSignature: opens the keystore now, as Java did, and signs the output with the key when it is
+    // written, certified at certificationLevel when that is above 0 and visible on page 1 if asked.
+    void setSignature(const std::wstring& keystore, const std::string& alias, const std::string& password,
+                      int certificationLevel, bool visible);
+
     // setPdfImages: the image export settings for burst and multipage TIFF output.
     void setPdfImages(std::optional<image::PdfToImage> pdfImages) { pdfImages_ = std::move(pdfImages); }
     const std::optional<image::PdfToImage>& pdfImages() const { return pdfImages_; }
@@ -134,6 +140,8 @@ private:
     void configureWriter(class QPDFWriter& writer, bool uncompressed, bool fullyCompressed) const;
     void finishInformation(QPDF& pdf) const;
     void applyOutputSettings(QPDF& pdf) const;
+    // a new empty file in the temporary folder, named ~pd*.tmp
+    static std::filesystem::path temporaryFile();
 
     Progress& progress_;
     std::shared_ptr<QPDF> current_;
@@ -156,6 +164,9 @@ private:
     std::optional<std::vector<std::pair<std::string, std::string>>> optionalViewerPreferences_;
     std::vector<std::filesystem::path> attachments_;
     std::optional<image::PdfToImage> pdfImages_;
+    std::unique_ptr<sign::SigningKey> signingKey_;
+    int certificationLevel_ = 0;
+    bool signatureVisible_ = false;
 };
 
 } // namespace pdftweak::pdf

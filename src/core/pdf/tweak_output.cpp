@@ -7,6 +7,7 @@
 #include "core/formats/xmp.h"
 #include "core/mupdf_bridge.h"
 #include "core/pdf/copy_pages.h"
+#include "core/sign/signing_key.h"
 #include "core/text.h"
 
 #include <qpdf/Buffer.hh>
@@ -103,6 +104,13 @@ void Tweak::finishInformation(QPDF& pdf) const {
         metadata.replaceStreamData(*updated, QPDFObjectHandle::newNull(), QPDFObjectHandle::newNull());
 }
 
+void Tweak::setSignature(const std::wstring& keystore, const std::string& alias,
+                         const std::string& password, int certificationLevel, bool visible) {
+    signingKey_ = std::make_unique<sign::SigningKey>(keystore, alias, password);
+    certificationLevel_ = certificationLevel;
+    signatureVisible_ = visible;
+}
+
 void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, bool uncompressed,
                         bool sizeOptimize, bool fullyCompressed) {
     try {
@@ -193,7 +201,26 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
             progress_.stage("Writing output", 1);
             applyOutputSettings(*current_);
             finishInformation(*current_);
-            writeFile(*current_, name, configure);
+            if (signingKey_) {
+                // spec section 7: qpdf writes a temporary file, MuPDF appends the signature to it, and
+                // the signed file becomes the output
+                const std::filesystem::path temp = temporaryFile();
+                try {
+                    writeFile(*current_, temp, configure);
+                    mupdf::signFile(utf8Path(temp), encryptionMode_ == -1 ? std::string() : ownerPassword_,
+                                    *signingKey_, signatureVisible_, certificationLevel_);
+                    std::filesystem::copy_file(temp, name,
+                                               std::filesystem::copy_options::overwrite_existing);
+                } catch (...) {
+                    std::error_code ignored;
+                    std::filesystem::remove(temp, ignored);
+                    throw;
+                }
+                std::error_code ignored;
+                std::filesystem::remove(temp, ignored);
+            } else {
+                writeFile(*current_, name, configure);
+            }
             progress_.advance();
         }
         current_.reset();

@@ -57,6 +57,7 @@
     <ClCompile Include="test_pages.cpp" />
     <ClCompile Include="test_regressions.cpp" />
     <ClCompile Include="test_relay.cpp" />
+    <ClCompile Include="test_sign.cpp" />
     <ClCompile Include="test_support.cpp" />
   </ItemGroup>
   <ItemGroup>

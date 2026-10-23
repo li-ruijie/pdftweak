@@ -24,6 +24,8 @@ std::filesystem::path createTempFile() {
 
 } // namespace
 
+std::filesystem::path Tweak::temporaryFile() { return createTempFile(); }
+
 Tweak::Tweak(std::shared_ptr<InputFile> single, bool useTempFiles, Progress& progress)
     : progress_(progress), current_(single->qpdf()), infoOrder_(single->infoOrder_) {
     if (useTempFiles) {

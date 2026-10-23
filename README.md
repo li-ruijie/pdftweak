@@ -58,3 +58,8 @@ LICENSE.
 - Port the export of pages as JPG, PNG, GIF, PAM, PNM, BMP, and TIFF images, and the multipage TIFF.
   GIF and BMP files come from the Windows Imaging Component, whose GIF palette for a colour page can
   differ from the one Java's ImageIO chose
+- Port signing. Keys come from PKCS#12 files or from the Windows certificate store
+  (`cert:CurrentUser\My`, with the alias as friendly name or thumbprint), where Java read Java
+  keystores, and a Java keystore is refused with the keytool command that converts it. The visible
+  signature shows MuPDF's appearance, and the CMS signature carries a signing time
+- Sign an encrypted output in the same run, where Java refused to sign and encrypt together
