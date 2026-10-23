@@ -55,3 +55,6 @@ LICENSE.
   transitions, and viewer preferences
 - Write every stream of the document uncompressed with the `u` output flag, where Java left the
   streams it copied from the input compressed
+- Port the export of pages as JPG, PNG, GIF, PAM, PNM, BMP, and TIFF images, and the multipage TIFF.
+  GIF and BMP files come from the Windows Imaging Component, whose GIF palette for a colour page can
+  differ from the one Java's ImageIO chose

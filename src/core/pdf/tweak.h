@@ -8,6 +8,7 @@
 #include "core/formats/page_labels.h"
 #include "core/formats/page_range.h"
 #include "core/formats/shuffle_rule.h"
+#include "core/image/pdf_to_image.h"
 #include "core/pdf/input_file.h"
 #include "core/progress.h"
 
@@ -97,6 +98,10 @@ public:
     void setViewerPreferences(int simplePrefs,
                               const std::vector<std::pair<std::string, std::string>>& optionalPrefs);
 
+    // setPdfImages: the image export settings for burst and multipage TIFF output.
+    void setPdfImages(std::optional<image::PdfToImage> pdfImages) { pdfImages_ = std::move(pdfImages); }
+    const std::optional<image::PdfToImage>& pdfImages() const { return pdfImages_; }
+
     // addFile: a file embedded when the output is written.
     void addFile(const std::filesystem::path& file) { attachments_.push_back(file); }
 
@@ -114,7 +119,8 @@ public:
     void removePageMarks();
 
     // writeOutput: resolves <F>, <FX>, <P>, and <#> in the name, then writes the output, one file
-    // per page when burst is set, and optimised for size, uncompressed, or with object streams.
+    // per page when burst is set (an image per page when the image settings say so), all pages as
+    // one TIFF with multipageTiff, and optimised for size, uncompressed, or with object streams.
     void writeOutput(std::string outputFile, bool multipageTiff, bool burst, bool uncompressed,
                      bool sizeOptimize, bool fullyCompressed);
 
@@ -149,6 +155,7 @@ private:
     int simpleViewerPreferences_ = 0;
     std::optional<std::vector<std::pair<std::string, std::string>>> optionalViewerPreferences_;
     std::vector<std::filesystem::path> attachments_;
+    std::optional<image::PdfToImage> pdfImages_;
 };
 
 } // namespace pdftweak::pdf

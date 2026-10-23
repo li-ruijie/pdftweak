@@ -139,7 +139,18 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
             configureWriter(writer, uncompressed, fullyCompressed);
         };
         if (multipageTiff) {
-            throw Error(Error::Kind::Io, "TIFF output is not available in this build");
+            if (name.find(L'*') != std::wstring::npos)
+                throw Error(Error::Kind::Io, "TIFF multipage filename should not contain *");
+            if (!pdfImages_)
+                throw Error(Error::Kind::Io, "No image settings for the multipage TIFF");
+            const int total = pageCount();
+            progress_.stage("Writing TIFF", 1);
+            PageCopier copy;
+            for (int page = 1; page <= total; ++page)
+                copy.addPage(*current_, page - 1);
+            std::shared_ptr<QPDF> all = copy.finish();
+            pdfImages_->convertToMultiTiff(writeBytes(*all), name);
+            progress_.advance();
         } else if (burst) {
             const size_t star = name.find(L'*');
             if (star == std::wstring::npos)
@@ -150,6 +161,7 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
             std::vector<std::string> labels;
             if (const auto formats = readPageLabels(*current_))
                 labels = formats::labelStrings(*formats, total);
+            const bool burstImages = pdfImages_ && pdfImages_->shouldExecute();
             progress_.stage("Bursting", total);
             for (int page = 1; page <= total; ++page) {
                 checkCancelled();
@@ -164,6 +176,12 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
                 PageCopier copy;
                 copy.addPage(*current_, page - 1);
                 std::shared_ptr<QPDF> single = copy.finish();
+                if (burstImages) {
+                    pdfImages_->convertToImage(
+                        writeBytes(*single), pdfImages_->imageFileName(prefix + fromUtf8(number), suffix));
+                    progress_.advance();
+                    continue;
+                }
                 // a burst page is a new document without the Info or XMP of its source, as in Java
                 completeNewInformation(*single);
                 finishInformation(*single);

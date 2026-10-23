@@ -44,6 +44,8 @@
     <ClInclude Include="formats\tables.h" />
     <ClInclude Include="formats\viewer_preferences.h" />
     <ClInclude Include="formats\xmp.h" />
+    <ClInclude Include="image\encoders.h" />
+    <ClInclude Include="image\pdf_to_image.h" />
     <ClInclude Include="java_text.h" />
     <ClInclude Include="libraries.h" />
     <ClInclude Include="mupdf_bridge.h" />
@@ -65,6 +67,7 @@
     <ClCompile Include="cli\content_options.cpp" />
     <ClCompile Include="cli\docinfo_option.cpp" />
     <ClCompile Include="cli\encrypt_options.cpp" />
+    <ClCompile Include="cli\image_options.cpp" />
     <ClCompile Include="cli\info_option.cpp" />
     <ClCompile Include="cli\page_options.cpp" />
     <ClCompile Include="console.cpp" />
@@ -77,6 +80,9 @@
     <ClCompile Include="formats\tables.cpp" />
     <ClCompile Include="formats\viewer_preferences.cpp" />
     <ClCompile Include="formats\xmp.cpp" />
+    <ClCompile Include="image\pdf_to_image.cpp" />
+    <ClCompile Include="image\tiff_writer.cpp" />
+    <ClCompile Include="image\wic_writer.cpp" />
     <ClCompile Include="java_text.cpp" />
     <ClCompile Include="libraries.cpp" />
     <ClCompile Include="mupdf_bridge.cpp" />

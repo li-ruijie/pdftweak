@@ -257,6 +257,11 @@ int run(const std::vector<std::string>& args, CliOutput& output, Progress& progr
         else
             tweak->removePageMarks();
     }
+    if (multipageTiff && !tweak->pdfImages()) {
+        std::unique_ptr<cli::CommandOption> option = cli::makeBurstImagesOption();
+        option->setOption("-burstfiletype", "TIFF", output);
+        option->run(*tweak, *input, output);
+    }
     tweak->writeOutput(*outputFile, multipageTiff, burstOutput, uncompressedOutput, sizeOptimize,
                        fullyCompress);
     output.err("Output file written successfully.\r\n");
@@ -309,6 +314,7 @@ std::vector<std::unique_ptr<CommandOption>> buildOptions() {
     options.push_back(makeDocInfoOption());
     options.push_back(makeEncryptOptions());
     options.push_back(makeInfoOption());
+    options.push_back(makeBurstImagesOption());
     return options;
 }
 

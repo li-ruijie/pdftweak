@@ -50,6 +50,7 @@
     <ClCompile Include="runner.cpp" />
     <ClCompile Include="test_content.cpp" />
     <ClCompile Include="test_formats.cpp" />
+    <ClCompile Include="test_images.cpp" />
     <ClCompile Include="test_libraries.cpp" />
     <ClCompile Include="test_operations.cpp" />
     <ClCompile Include="test_output.cpp" />
