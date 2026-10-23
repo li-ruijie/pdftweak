@@ -332,4 +332,118 @@ std::string javaFormat(std::string_view mask, std::span<const FormatArg> args) {
     return out;
 }
 
+std::string javaUtf8Decode(std::string_view bytes) {
+    const auto at = [&](size_t i) { return static_cast<unsigned char>(bytes[i]); };
+    const auto continuation = [](unsigned char b) { return (b & 0xC0) == 0x80; };
+    std::u32string out;
+    const size_t n = bytes.size();
+    size_t i = 0;
+    while (i < n) {
+        const unsigned char b1 = at(i);
+        if (b1 < 0x80) {
+            out.push_back(b1);
+            ++i;
+        } else if (b1 >= 0xC2 && b1 <= 0xDF) {
+            if (i + 1 < n && continuation(at(i + 1))) {
+                out.push_back(static_cast<char32_t>(((b1 & 0x1F) << 6) | (at(i + 1) & 0x3F)));
+                i += 2;
+            } else {
+                out.push_back(0xFFFD);
+                ++i;
+            }
+        } else if (b1 >= 0xE0 && b1 <= 0xEF) {
+            // isMalformed3_2: an overlong E0 sequence or a second byte that does not continue
+            const auto badSecond = [&](unsigned char b2) {
+                return (b1 == 0xE0 && (b2 & 0xE0) == 0x80) || !continuation(b2);
+            };
+            if (i + 2 < n) {
+                const unsigned char b2 = at(i + 1), b3 = at(i + 2);
+                if (badSecond(b2)) {
+                    out.push_back(0xFFFD);
+                    ++i;
+                } else if (!continuation(b3)) {
+                    out.push_back(0xFFFD);
+                    i += 2;
+                } else {
+                    const char32_t c =
+                        static_cast<char32_t>(((b1 & 0x0F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F));
+                    out.push_back(c >= 0xD800 && c <= 0xDFFF ? char32_t{0xFFFD} : c);
+                    i += 3;
+                }
+            } else if (i + 1 < n && badSecond(at(i + 1))) {
+                out.push_back(0xFFFD);
+                ++i;
+            } else {
+                out.push_back(0xFFFD); // a truncated sequence ends the input
+                i = n;
+            }
+        } else if (b1 >= 0xF0 && b1 <= 0xF7) {
+            // isMalformed4_2: a lead above F4, an overlong or out-of-range second byte, or none
+            const auto badSecond = [&](unsigned char b2) {
+                return b1 > 0xF4 || (b1 == 0xF0 && (b2 < 0x90 || b2 > 0xBF)) ||
+                       (b1 == 0xF4 && (b2 & 0xF0) != 0x80) || !continuation(b2);
+            };
+            if (i + 3 < n) {
+                const unsigned char b2 = at(i + 1), b3 = at(i + 2), b4 = at(i + 3);
+                if (badSecond(b2)) {
+                    out.push_back(0xFFFD);
+                    ++i;
+                } else if (!continuation(b3)) {
+                    out.push_back(0xFFFD);
+                    i += 2;
+                } else if (!continuation(b4)) {
+                    out.push_back(0xFFFD);
+                    i += 3;
+                } else {
+                    out.push_back(static_cast<char32_t>(((b1 & 0x07) << 18) | ((b2 & 0x3F) << 12) |
+                                                        ((b3 & 0x3F) << 6) | (b4 & 0x3F)));
+                    i += 4;
+                }
+            } else if (b1 > 0xF4 || (i + 1 < n && badSecond(at(i + 1)))) {
+                out.push_back(0xFFFD);
+                ++i;
+            } else if (i + 2 < n && !continuation(at(i + 2))) {
+                out.push_back(0xFFFD);
+                i += 2;
+            } else {
+                out.push_back(0xFFFD);
+                i = n;
+            }
+        } else {
+            out.push_back(0xFFFD); // a continuation byte, C0, C1, or F8 to FF
+            ++i;
+        }
+    }
+    return fromCodePoints(out);
+}
+
+int javaStringHash(std::string_view utf8) {
+    std::uint32_t h = 0;
+    for (const char32_t c : codePoints(utf8)) {
+        if (c >= 0x10000) {
+            const char32_t v = c - 0x10000;
+            h = 31 * h + static_cast<std::uint32_t>(0xD800 + (v >> 10));
+            h = 31 * h + static_cast<std::uint32_t>(0xDC00 + (v & 0x3FF));
+        } else {
+            h = 31 * h + static_cast<std::uint32_t>(c);
+        }
+    }
+    return static_cast<int>(h);
+}
+
+std::vector<size_t> javaHashMapOrder(const std::vector<std::string>& keys) {
+    size_t capacity = 16;
+    while (keys.size() > capacity * 3 / 4)
+        capacity *= 2;
+    std::vector<size_t> order(keys.size());
+    std::vector<size_t> bucket(keys.size());
+    for (size_t i = 0; i < keys.size(); ++i) {
+        const auto h = static_cast<std::uint32_t>(javaStringHash(keys[i]));
+        bucket[i] = (h ^ (h >> 16)) & (capacity - 1);
+        order[i] = i;
+    }
+    std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b) { return bucket[a] < bucket[b]; });
+    return order;
+}
+
 } // namespace pdftweak

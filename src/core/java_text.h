@@ -33,4 +33,20 @@ std::string javaTrim(std::string_view text);
 using FormatArg = std::variant<long long, std::string>;
 std::string javaFormat(std::string_view mask, std::span<const FormatArg> args);
 
+// new String(bytes, UTF_8): bytes decoded as Java does, with one U+FFFD for each malformed run as
+// the JDK's decoder measures it (one byte for a bad lead or a bad second byte, two or three for a
+// partly valid sequence, and the whole tail for a truncated but valid start). Returns UTF-8.
+std::string javaUtf8Decode(std::string_view bytes);
+
+// String.hashCode over the UTF-16 code units of UTF-8 text.
+int javaStringHash(std::string_view utf8);
+
+// The iteration order of a java.util.HashMap<String, ?> whose keys were put in the given order (no
+// duplicates): buckets in index order for the final capacity (16, doubling whenever the count
+// passes three quarters of it), insertion order within a bucket. Resizing keeps the relative order
+// within a bucket, so only the final capacity matters. A bin is turned into a tree only after
+// eight collisions at capacity 64 or more, which the maps of document information and bookmark
+// options cannot reach, so trees are not modelled. Returns indices into keys.
+std::vector<size_t> javaHashMapOrder(const std::vector<std::string>& keys);
+
 } // namespace pdftweak

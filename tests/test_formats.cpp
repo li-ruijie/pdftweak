@@ -15,6 +15,7 @@
 #include "core/java_text.h"
 #include "core/text.h"
 
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -247,4 +248,72 @@ TEST(unit_tablesAndViewerPreferences) {
     CHECK_EQUAL(prefs[5].key, std::string("/DisplayDocTitle"));
     CHECK_EQUAL(prefs[7].values[1], std::string("/R2L"));
     CHECK_EQUAL(prefs[15].values[1], std::string("2"));
+}
+
+namespace {
+
+std::string decodedHex(const std::string& hex) {
+    std::string bytes;
+    for (size_t i = 0; i + 1 < hex.size(); i += 2)
+        bytes += static_cast<char>(std::stoi(hex.substr(i, 2), nullptr, 16));
+    std::string codes;
+    for (const char32_t c : codePoints(javaUtf8Decode(bytes))) {
+        char buffer[8];
+        std::snprintf(buffer, sizeof buffer, "%04X ", static_cast<unsigned>(c));
+        codes += buffer;
+    }
+    return codes;
+}
+
+std::string hashOrder(const std::vector<std::string>& keys) {
+    std::string text;
+    for (const size_t i : javaHashMapOrder(keys))
+        text += (text.empty() ? "" : ",") + keys[i];
+    return text;
+}
+
+} // namespace
+
+TEST(unit_javaUtf8DecodeMatchesJava) {
+    // Each expectation but the last is what new String(bytes) printed on OpenJDK 27.0.1. The last
+    // is a valid four-byte sequence.
+    CHECK_EQUAL(decodedHex("63616665E9"), std::string("0063 0061 0066 0065 FFFD "));
+    CHECK_EQUAL(decodedHex("636166E965"), std::string("0063 0061 0066 FFFD 0065 "));
+    CHECK_EQUAL(decodedHex("80"), std::string("FFFD "));
+    CHECK_EQUAL(decodedHex("C3A9"), std::string("00E9 "));
+    CHECK_EQUAL(decodedHex("E282"), std::string("FFFD "));
+    CHECK_EQUAL(decodedHex("E28241"), std::string("FFFD 0041 "));
+    CHECK_EQUAL(decodedHex("E241"), std::string("FFFD 0041 "));
+    CHECK_EQUAL(decodedHex("F0908041"), std::string("FFFD 0041 "));
+    CHECK_EQUAL(decodedHex("F09080"), std::string("FFFD "));
+    CHECK_EQUAL(decodedHex("C0AF"), std::string("FFFD FFFD "));
+    CHECK_EQUAL(decodedHex("EDA080"), std::string("FFFD "));
+    CHECK_EQUAL(decodedHex("F4908080"), std::string("FFFD FFFD FFFD FFFD "));
+    CHECK_EQUAL(decodedHex("E08080"), std::string("FFFD FFFD FFFD "));
+    CHECK_EQUAL(decodedHex("FF"), std::string("FFFD "));
+    CHECK_EQUAL(decodedHex("C341"), std::string("FFFD 0041 "));
+    CHECK_EQUAL(decodedHex("F08041"), std::string("FFFD FFFD 0041 "));
+    CHECK_EQUAL(decodedHex("E2"), std::string("FFFD "));
+    CHECK_EQUAL(decodedHex("F0"), std::string("FFFD "));
+    CHECK_EQUAL(decodedHex("F09041"), std::string("FFFD 0041 "));
+    CHECK_EQUAL(decodedHex("F09F9880"), std::string("1F600 "));
+}
+
+TEST(unit_javaHashMapOrderMatchesJava) {
+    // Each expectation is the keySet order a java.util.HashMap printed on OpenJDK 27.0.1.
+    CHECK_EQUAL(javaStringHash("\u00DCber"), 6651443);
+    CHECK_EQUAL(javaStringHash("\u65E5\u672C"), 835047);
+    CHECK_EQUAL(javaStringHash("\U0001F600"), 1772899);
+    CHECK_EQUAL(hashOrder({"Producer", "CreationDate", "ModDate", "Title", "Author"}),
+                std::string("CreationDate,Producer,Title,Author,ModDate"));
+    CHECK_EQUAL(hashOrder({"Author", "Title", "ModDate", "Creator", "Producer"}),
+                std::string("Producer,Author,Title,ModDate,Creator"));
+    CHECK_EQUAL(hashOrder({"B", "A"}), std::string("A,B"));
+    CHECK_EQUAL(hashOrder({"Title", "Subject", "Keywords", "Author", "Creator", "Producer", "CreationDate",
+                           "ModDate", "Trapped", "Custom1", "Custom2", "Custom3", "Custom4", "\u00DCber",
+                           "\u65E5\u672C"}),
+                std::string("CreationDate,Keywords,Title,Creator,\u65E5\u672C,Subject,Custom4,Custom3,"
+                            "Custom2,Custom1,Producer,\u00DCber,Author,ModDate,Trapped"));
+    CHECK_EQUAL(hashOrder({"Color", "Style", "URI", "Action", "Named", "File", "NewWindow", "Rect"}),
+                std::string("Named,Action,Rect,NewWindow,Color,Style,URI,File"));
 }
