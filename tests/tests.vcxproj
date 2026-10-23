@@ -42,6 +42,7 @@
   <ItemGroup>
     <ClCompile Include="process.cpp" />
     <ClCompile Include="runner.cpp" />
+    <ClCompile Include="test_formats.cpp" />
     <ClCompile Include="test_libraries.cpp" />
     <ClCompile Include="test_relay.cpp" />
   </ItemGroup>

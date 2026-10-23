@@ -33,13 +33,35 @@
   <ItemGroup>
     <ClInclude Include="cli.h" />
     <ClInclude Include="console.h" />
+    <ClInclude Include="error.h" />
+    <ClInclude Include="formats\bookmark.h" />
+    <ClInclude Include="formats\integer_list.h" />
+    <ClInclude Include="formats\page_dimension.h" />
+    <ClInclude Include="formats\page_labels.h" />
+    <ClInclude Include="formats\page_range.h" />
+    <ClInclude Include="formats\shuffle_rule.h" />
+    <ClInclude Include="formats\tables.h" />
+    <ClInclude Include="formats\viewer_preferences.h" />
+    <ClInclude Include="java_text.h" />
     <ClInclude Include="libraries.h" />
+    <ClInclude Include="progress.h" />
+    <ClInclude Include="text.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli.cpp" />
     <ClCompile Include="console.cpp" />
+    <ClCompile Include="formats\bookmark.cpp" />
+    <ClCompile Include="formats\integer_list.cpp" />
+    <ClCompile Include="formats\page_dimension.cpp" />
+    <ClCompile Include="formats\page_labels.cpp" />
+    <ClCompile Include="formats\page_range.cpp" />
+    <ClCompile Include="formats\shuffle_rule.cpp" />
+    <ClCompile Include="formats\tables.cpp" />
+    <ClCompile Include="formats\viewer_preferences.cpp" />
+    <ClCompile Include="java_text.cpp" />
     <ClCompile Include="libraries.cpp" />
+    <ClCompile Include="text.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
