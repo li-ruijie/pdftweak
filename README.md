@@ -6,8 +6,23 @@ encrypts and signs documents, bursts them into single pages, and exports pages a
 port of jPDF Tweak 1.3.1 with a native Windows interface, and it keeps jPDF Tweak's command-line
 syntax and file formats.
 
-This version is under development. Milestone 2 ports the command line, and milestone 3 adds the
-windows of the graphical interface.
+This version is under development. The command line and the window are ported, and milestone 4
+packages them.
+
+## Using the window
+
+`pdftweak.exe` without arguments opens the window, as `jpdftweak.jar` did. Its eleven tabs follow
+jPDF Tweak's order: Input, Page Size, Watermark, Shuffle/N-up, Page Numbers, Bookmarks, Attachments,
+Interaction, Document Info, Encrypt/Sign, and Output. Choose the input on the Input tab, set the
+changes on the tabs in between, name the output on the Output tab, and press Run.
+
+A run works in the background. While it runs, a panel in place of the Run and Quit buttons names the
+file, the tab, and the stage, with a bar that the taskbar button repeats. Cancel stops the run at
+the next page or stage, deletes the output being written, and keeps the outputs of files a batch
+finished before. Closing the window during a run cancels it.
+
+With arguments, `pdftweak.exe` runs the command line. In a console, `pdftweak.com` relays its
+output, and `pdftweak -help` lists the options.
 
 ## Building
 
@@ -17,7 +32,7 @@ component, PowerShell 7, and optionally NASM for faster JPEG code.
 ```
 pwsh deps\deps.ps1
 msbuild pdftweak.sln -p:Configuration=Release -p:Platform=x64
-build\x64\Release\pdftweak-tests.exe unit main
+build\x64\Release\pdftweak-tests.exe unit main gui
 ```
 
 `deps\deps.ps1` downloads the sources of MuPDF, qpdf, libtiff, zlib, and libjpeg-turbo, checks each
@@ -67,6 +82,9 @@ LICENSE.
   error or a plain one where Java had none: a run with an empty cell, an unknown transition, or a
   page before the first in the transitions table, and a bookmark CSV file that does not import or
   export. A failed export writes no file, where Java left an empty one
+- Port the window with its eleven tabs, the six tables, and the shuffle preview. A run works on a
+  separate thread and shows its file, tab, stage, and progress, also on the taskbar button, with a
+  Cancel button, where Java's window stopped responding until the run ended
 - Load the encryption of a file with unencrypted metadata or 256-bit AES in the Encrypt/Sign tab,
   selecting its mode when the list offers it, where Java stopped before the passwords and
   permissions
