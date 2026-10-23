@@ -62,7 +62,8 @@ int mupdfRender(const std::string& pdf, int* pageCount, int* width, int* height)
 std::string onePageLetterPdf() {
     QPDF qpdf;
     qpdf.emptyPDF();
-    QPDFObjectHandle page = QPDFObjectHandle::parse("<< /Type /Page /MediaBox [0 0 612 792] /Resources << >> >>");
+    QPDFObjectHandle page =
+        QPDFObjectHandle::parse("<< /Type /Page /MediaBox [0 0 612 792] /Resources << >> >>");
     page.replaceKey("/Contents", qpdf.newStream("0 0 1 rg 72 72 468 648 re f"));
     QPDFPageDocumentHelper(qpdf).addPage(QPDFPageObjectHelper(qpdf.makeIndirectObject(page)), false);
     QPDFWriter writer(qpdf);

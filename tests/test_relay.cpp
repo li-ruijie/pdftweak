@@ -8,7 +8,8 @@
 #include <string>
 
 TEST(main_relayPassesOutputAndSuccess) {
-    const auto result = pdftweak::test::runProcess(pdftweak::test::binaryFolder() / "pdftweak.com", L"-version");
+    const auto result =
+        pdftweak::test::runProcess(pdftweak::test::binaryFolder() / "pdftweak.com", L"-version");
     CHECK_EQUAL(result.exitCode, 0ul);
     CHECK_EQUAL(result.out, std::string("PDF Tweak 2.0.0\r\n"));
     CHECK_EQUAL(result.err, std::string(""));
