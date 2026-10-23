@@ -64,6 +64,9 @@ public:
     // Simulates what a user's selection of an item does: selects it and runs the handler.
     void chooseItem(HWND combo, int index);
 
+    // Runs the work after the messages already queued, as SwingUtilities.invokeLater.
+    void later(std::function<void()> work);
+
 protected:
     // Creates the controls and sets the layout.
     virtual void build() = 0;

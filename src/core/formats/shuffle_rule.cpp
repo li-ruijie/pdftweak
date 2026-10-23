@@ -103,7 +103,7 @@ ShuffleRule parseRule(std::string_view text) {
     r.offsetYPercent = m[9].length() == 1;
     r.frameWidth = m[10].length() == 0 ? 0 : javaParseDouble(m[11].str().substr(1));
     if (r.page <= 0) // the IllegalArgumentException of the ShuffleRule constructor
-        throw Error(Error::Kind::Document, "Invalid page number " + std::to_string(r.page));
+        throw InvalidRule(Error::Kind::Document, "Invalid page number " + std::to_string(r.page));
     return r;
 }
 

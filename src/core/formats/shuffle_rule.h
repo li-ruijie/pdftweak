@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/error.h"
+
 #include <string>
 #include <string_view>
 #include <utility>
@@ -38,8 +40,15 @@ struct RuleSet {
     std::vector<ShuffleRule> rules;
 };
 
+// The IllegalArgumentException of the ShuffleRule constructor, for a page number below 1, which the
+// Shuffle tab reports differently from a NumberFormatException.
+struct InvalidRule : Error {
+    using Error::Error;
+};
+
 // ShuffleRule.parseRule and parseRuleSet. Throws Error(Document) with the message of the Java
-// NumberFormatException, which is the rule itself for a rule that does not parse.
+// NumberFormatException, which is the rule itself for a rule that does not parse, and InvalidRule
+// for a page number below 1.
 ShuffleRule parseRule(std::string_view rule);
 RuleSet parseRuleSet(std::string_view ruleSet);
 

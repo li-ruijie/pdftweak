@@ -121,10 +121,26 @@ Component control(HWND hwnd) {
         return {scaled(hwnd, 100), line + scaled(hwnd, 8)};
     };
     component.place = [hwnd](const RECT& rect) {
-        int height = rect.bottom - rect.top;
-        if (className(hwnd) == L"combobox")
-            height = scaled(hwnd, 300); // the closed box keeps its own height, the rest is the list
-        SetWindowPos(hwnd, nullptr, rect.left, rect.top, rect.right - rect.left, height,
+        const std::wstring cls = className(hwnd);
+        const int cell = rect.bottom - rect.top;
+        int top = rect.top;
+        int height = cell;
+        if (cls == L"combobox") {
+            // the closed box keeps its own height, centred in the cell, and the rest is the list
+            RECT box;
+            GetWindowRect(hwnd, &box);
+            top += std::max(0, (cell - static_cast<int>(box.bottom - box.top)) / 2);
+            height = scaled(hwnd, 300);
+        } else if (cls == L"edit") {
+            // a single-line field draws its text at the top, so it keeps its own height, centred,
+            // where Swing centred the text in a taller field
+            height = std::min(cell, static_cast<int>(textSize(hwnd, L"").cy) + scaled(hwnd, 8));
+            top += (cell - height) / 2;
+        } else if (cls == L"static" && (GetWindowLongW(hwnd, GWL_STYLE) & SS_TYPEMASK) == SS_ETCHEDHORZ) {
+            // JSeparator draws its line at the top of its cell
+            height = scaled(hwnd, 2);
+        }
+        SetWindowPos(hwnd, nullptr, rect.left, top, rect.right - rect.left, height,
                      SWP_NOZORDER | SWP_NOACTIVATE);
     };
     return component;

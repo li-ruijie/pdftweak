@@ -552,13 +552,15 @@ LRESULT TableEditor::customDraw(NMLVCUSTOMDRAW* draw) {
         cell.right -= 1;
         cell.bottom -= 1;
         const bool selected = ListView_GetItemState(list_, row, LVIS_SELECTED) != 0;
-        const int background = !selected             ? COLOR_WINDOW
+        const bool enabled = isEnabled(list_);
+        // the colours the list view gives the other cells of the row
+        const int background = !enabled              ? COLOR_BTNFACE
+                               : !selected           ? COLOR_WINDOW
                                : GetFocus() == list_ ? COLOR_HIGHLIGHT
                                                      : COLOR_BTNFACE;
         FillRect(draw->nmcd.hdc, &cell, GetSysColorBrush(background));
         const Value& value = rows_[static_cast<size_t>(row)][static_cast<size_t>(column)];
         const bool checked = std::holds_alternative<bool>(value) && std::get<bool>(value);
-        const bool enabled = isEnabled(list_);
         const HTHEME theme = OpenThemeData(list_, L"BUTTON");
         SIZE box{scaled(list_, 13), scaled(list_, 13)};
         if (theme != nullptr)

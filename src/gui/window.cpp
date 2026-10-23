@@ -15,6 +15,8 @@ const wchar_t* const kFrameClass = L"PdfTweakFrame";
 const wchar_t* const kTooltipProperty = L"PdfTweakTooltip";
 // Posted by a combo box's CBN_SELENDOK, to run after any CBN_SELCHANGE of the same choice.
 const UINT kComboChosen = WM_APP + 1;
+// Posted by Page::later, with the work in lParam.
+const UINT kLater = WM_APP + 2;
 
 } // namespace
 
@@ -182,6 +184,10 @@ void Page::chooseItem(HWND combo, int index) {
                  reinterpret_cast<LPARAM>(combo));
 }
 
+void Page::later(std::function<void()> work) {
+    PostMessageW(hwnd_, kLater, 0, reinterpret_cast<LPARAM>(new std::function<void()>(std::move(work))));
+}
+
 LRESULT Page::message(UINT msg, WPARAM wParam, LPARAM lParam) {
     return DefWindowProcW(hwnd_, msg, wParam, lParam);
 }
@@ -337,6 +343,11 @@ LRESULT Page::handle(UINT msg, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         break;
+    }
+    case kLater: {
+        const std::unique_ptr<std::function<void()>> work(reinterpret_cast<std::function<void()>*>(lParam));
+        (*work)();
+        return 0;
     }
     case kComboChosen: {
         // the user picked the item that was already selected, which sends no CBN_SELCHANGE

@@ -116,9 +116,12 @@ private:
 
 MainWindow::MainWindow(bool visible) {
     tabs_.push_back(std::make_unique<InputTab>(*this));
+    tabs_.push_back(std::make_unique<PageSizeTab>(*this));
+    tabs_.push_back(std::make_unique<WatermarkTab>(*this));
+    tabs_.push_back(std::make_unique<ShuffleTab>(*this));
+    tabs_.push_back(std::make_unique<PageNumberTab>(*this));
     for (const wchar_t* name :
-         {L"Page Size", L"Watermark", L"Shuffle/N-up", L"Page Numbers", L"Bookmarks", L"Attachments",
-          L"Interaction", L"Document Info", L"Encrypt/Sign", L"Output"})
+         {L"Bookmarks", L"Attachments", L"Interaction", L"Document Info", L"Encrypt/Sign", L"Output"})
         tabs_.push_back(std::make_unique<PlaceholderTab>(*this, name));
     content_ = std::make_unique<Content>(*this);
     frame_ = std::make_unique<Frame>(nullptr, programTitle(), *content_, true);
@@ -134,7 +137,7 @@ MainWindow::MainWindow(bool visible) {
 
 MainWindow::~MainWindow() = default;
 
-HWND MainWindow::handle() const { return frame_->handle(); }
+HWND MainWindow::handle() const { return frame_ ? frame_->handle() : nullptr; }
 
 InputTab& MainWindow::inputTab() { return tab<InputTab>(); }
 
