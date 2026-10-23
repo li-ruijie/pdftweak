@@ -40,6 +40,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="cli_run.h" />
+    <ClInclude Include="describe.h" />
     <ClInclude Include="fixtures.h" />
     <ClInclude Include="inspect.h" />
     <ClInclude Include="process.h" />
@@ -47,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli_run.cpp" />
+    <ClCompile Include="describe.cpp" />
     <ClCompile Include="fixtures.cpp" />
     <ClCompile Include="inspect.cpp" />
     <ClCompile Include="process.cpp" />
