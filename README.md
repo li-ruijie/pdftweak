@@ -20,8 +20,8 @@ build\x64\Release\pdftweak-tests.exe unit main
 ```
 
 `deps\deps.ps1` downloads the sources of MuPDF, qpdf, libtiff, zlib, and libjpeg-turbo, checks each
-against the SHA-256 in `deps\pins.psd1`, and builds them. It takes about an hour for Debug and Release
-together.
+against the SHA-256 in `deps\pins.psd1`, and builds them. Debug and Release together take 30 to 40
+minutes, mostly for MuPDF.
 
 ## Licence
 
