@@ -35,12 +35,40 @@ bool isInput(const std::vector<std::filesystem::path>& inputs, const std::filesy
     });
 }
 
+// Reports the percentage of a qpdf write as units of a stage of 100, and cancels the write when the
+// run is cancelled before it has finished.
+class WriteReporter final : public QPDFWriter::ProgressReporter {
+public:
+    explicit WriteReporter(Progress& progress) : progress_(progress) {}
+    void reportProgress(int percent) override {
+        if (percent < 100 && progress_.cancelled())
+            throw Cancelled();
+        if (percent > reported_) {
+            progress_.advance(percent - reported_);
+            reported_ = percent;
+        }
+    }
+
+private:
+    Progress& progress_;
+    int reported_ = 0;
+};
+
+// Writes the file, reporting to progress when given. A cancelled write leaves no file.
 void writeFile(QPDF& pdf, const std::filesystem::path& file,
-               const std::function<void(QPDFWriter&)>& configure) {
+               const std::function<void(QPDFWriter&)>& configure, Progress* progress = nullptr) {
     createForWriting(file, utf8Path(file));
-    QPDFWriter writer(pdf, utf8Path(file).c_str());
-    configure(writer);
-    writer.write();
+    try {
+        QPDFWriter writer(pdf, utf8Path(file).c_str());
+        configure(writer);
+        if (progress != nullptr)
+            writer.registerProgressReporter(std::make_shared<WriteReporter>(*progress));
+        writer.write();
+    } catch (const Cancelled&) {
+        std::error_code ignored;
+        std::filesystem::remove(file, ignored);
+        throw;
+    }
 }
 
 } // namespace
@@ -175,8 +203,16 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
                 labels = formats::labelStrings(*formats, total);
             const bool burstImages = pdfImages_ && pdfImages_->shouldExecute();
             progress_.stage("Bursting", total);
+            // the pages written so far, which a cancel removes
+            std::vector<std::filesystem::path> written;
             for (int page = 1; page <= total; ++page) {
-                checkCancelled();
+                if (progress_.cancelled()) {
+                    for (const std::filesystem::path& file : written) {
+                        std::error_code ignored;
+                        std::filesystem::remove(file, ignored);
+                    }
+                    throw Cancelled();
+                }
                 const std::string number = labels.empty() ? std::to_string(page) : labels[page - 1];
                 const std::filesystem::path outFile = prefix + fromUtf8(number) + suffix;
                 if (isInput(inputFiles_, outFile))
@@ -189,8 +225,10 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
                 copy.addPage(*current_, page - 1);
                 std::shared_ptr<QPDF> single = copy.finish();
                 if (burstImages) {
-                    pdfImages_->convertToImage(
-                        writeBytes(*single), pdfImages_->imageFileName(prefix + fromUtf8(number), suffix));
+                    const std::wstring imageFile =
+                        pdfImages_->imageFileName(prefix + fromUtf8(number), suffix);
+                    pdfImages_->convertToImage(writeBytes(*single), imageFile);
+                    written.push_back(imageFile);
                     progress_.advance();
                     continue;
                 }
@@ -198,11 +236,13 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
                 completeNewInformation(*single);
                 finishInformation(*single);
                 writeFile(*single, outFile, configure);
+                written.push_back(outFile);
                 progress_.advance();
             }
         } else {
             checkCancelled();
-            progress_.stage("Writing output", 1);
+            // the final write reports its percentage
+            progress_.stage("Writing output", 100);
             applyOutputSettings(*current_);
             finishInformation(*current_);
             if (signingKey_) {
@@ -211,11 +251,19 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
                 createForWriting(name, toUtf8(name));
                 const std::filesystem::path temp = temporaryFile();
                 try {
-                    writeFile(*current_, temp, configure);
+                    writeFile(*current_, temp, configure, &progress_);
+                    // signing finishes before a cancel takes effect
+                    progress_.stage("Signing", 1);
                     mupdf::signFile(utf8Path(temp), encryptionMode_ == -1 ? std::string() : ownerPassword_,
                                     *signingKey_, signatureVisible_, certificationLevel_);
                     std::filesystem::copy_file(temp, name,
                                                std::filesystem::copy_options::overwrite_existing);
+                    progress_.advance();
+                } catch (const Cancelled&) {
+                    std::error_code ignored;
+                    std::filesystem::remove(temp, ignored);
+                    std::filesystem::remove(name, ignored);
+                    throw;
                 } catch (...) {
                     std::error_code ignored;
                     std::filesystem::remove(temp, ignored);
@@ -224,9 +272,8 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
                 std::error_code ignored;
                 std::filesystem::remove(temp, ignored);
             } else {
-                writeFile(*current_, name, configure);
+                writeFile(*current_, name, configure, &progress_);
             }
-            progress_.advance();
         }
         current_.reset();
         for (const std::filesystem::path* temp : {&tempfile1_, &tempfile2_}) {

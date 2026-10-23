@@ -7,12 +7,16 @@
 #include "fixtures.h"
 #include "inspect.h"
 
+#include "core/pdf/tweak.h"
+#include "core/progress.h"
+
 #include <qpdf/Buffer.hh>
 #include <qpdf/QPDF.hh>
 #include <qpdf/QPDFPageDocumentHelper.hh>
 #include <qpdf/QPDFWriter.hh>
 
 #include <filesystem>
+#include <functional>
 #include <set>
 
 using namespace pdftweak::test;
@@ -292,4 +296,86 @@ TEST(main_outputNamesFailAsJavaDoesOnWindows) {
                 std::string("nodir\\out.pdf (The system cannot find the path specified)"));
     CHECK_EQUAL(cliError({in, "-info", "nodir\\info.txt"}),
                 std::string("nodir\\info.txt (The system cannot find the path specified)"));
+}
+
+namespace {
+
+// A Progress that records its stages and asks to cancel once a stage of the given label has
+// finished the given number of units (0 cancels as the stage starts).
+class CancelAt final : public pdftweak::Progress {
+public:
+    CancelAt(std::string label, long long after) : label_(std::move(label)), after_(after) {}
+    void stage(const std::string& label, long long units) override {
+        current_ = label;
+        done_ = 0;
+        stages.push_back(label + " " + std::to_string(units));
+        check();
+    }
+    void advance(long long units) override {
+        done_ += units;
+        check();
+    }
+    bool cancelled() const override { return cancelled_; }
+    std::vector<std::string> stages;
+    long long done() const { return done_; }
+
+private:
+    void check() {
+        if (current_ == label_ && done_ >= after_)
+            cancelled_ = true;
+    }
+    std::string label_;
+    long long after_;
+    std::string current_;
+    long long done_ = 0;
+    bool cancelled_ = false;
+};
+
+bool cancels(const std::function<void()>& work) {
+    try {
+        work();
+    } catch (const pdftweak::Cancelled&) {
+        return true;
+    }
+    return false;
+}
+
+} // namespace
+
+// Spec 9.1: the final qpdf write reports its percentage, and a cancel during it removes the output
+// being written.
+TEST(main_cancelDuringTheWriteRemovesTheOutput) {
+    const auto in = fixture(".", "in.pdf", 3);
+    {
+        CancelAt never("none", 0);
+        pdftweak::pdf::Tweak tweak(std::make_shared<pdftweak::pdf::InputFile>(in, ""), false, never);
+        tweak.writeOutput("whole.pdf", false, false, false, false, false);
+        CHECK(never.stages == std::vector<std::string>{"Writing output 100"});
+        CHECK_EQUAL(never.done(), 100LL);
+    }
+    CancelAt progress("Writing output", 0);
+    pdftweak::pdf::Tweak tweak(std::make_shared<pdftweak::pdf::InputFile>(in, ""), false, progress);
+    CHECK(cancels([&] { tweak.writeOutput("out.pdf", false, false, false, false, false); }));
+    CHECK(!std::filesystem::exists("out.pdf"));
+}
+
+// Spec 9.1: a cancelled burst removes the pages it wrote for the current input.
+TEST(main_cancelledBurstRemovesItsPages) {
+    const auto in = fixture(".", "in.pdf", 3);
+    CancelAt progress("Bursting", 2);
+    pdftweak::pdf::Tweak tweak(std::make_shared<pdftweak::pdf::InputFile>(in, ""), false, progress);
+    CHECK(cancels([&] { tweak.writeOutput("page-*.pdf", false, true, false, false, false); }));
+    for (const char* page : {"page-1.pdf", "page-2.pdf", "page-3.pdf"})
+        CHECK(!std::filesystem::exists(page));
+}
+
+// A cancel while a signed output is written removes the output and the temporary file before it.
+TEST(main_cancelledSigningRemovesTheOutput) {
+    const auto in = fixture(".", "in.pdf", 1);
+    const auto keystore = pkcs12(".");
+    CancelAt progress("Writing output", 0);
+    pdftweak::pdf::Tweak tweak(std::make_shared<pdftweak::pdf::InputFile>(in, ""), false, progress);
+    tweak.setSignature(std::filesystem::absolute(keystore).wstring(), "mykey", "secret", 0, false);
+    CHECK(cancels([&] { tweak.writeOutput("signed.pdf", false, false, false, false, false); }));
+    CHECK(!std::filesystem::exists("signed.pdf"));
 }
