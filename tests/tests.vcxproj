@@ -36,15 +36,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="fixtures.h" />
+    <ClInclude Include="inspect.h" />
     <ClInclude Include="process.h" />
     <ClInclude Include="runner.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="fixtures.cpp" />
+    <ClCompile Include="inspect.cpp" />
     <ClCompile Include="process.cpp" />
     <ClCompile Include="runner.cpp" />
     <ClCompile Include="test_formats.cpp" />
     <ClCompile Include="test_libraries.cpp" />
     <ClCompile Include="test_relay.cpp" />
+    <ClCompile Include="test_support.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\core\core.vcxproj">
