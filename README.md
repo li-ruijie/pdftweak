@@ -63,3 +63,10 @@ LICENSE.
   keystores, and a Java keystore is refused with the keytool command that converts it. The visible
   signature shows MuPDF's appearance, and the CMS signature carries a signing time
 - Sign an encrypted output in the same run, where Java refused to sign and encrypt together
+- Show in an error box the failures that Java's window left unreported, with the message of the
+  error or a plain one where Java had none: a run with an empty cell, an unknown transition, or a
+  page before the first in the transitions table, and a bookmark CSV file that does not import or
+  export. A failed export writes no file, where Java left an empty one
+- Load the encryption of a file with unencrypted metadata or 256-bit AES in the Encrypt/Sign tab,
+  selecting its mode when the list offers it, where Java stopped before the passwords and
+  permissions

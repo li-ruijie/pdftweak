@@ -82,11 +82,12 @@ void BookmarkTab::importCsv(const std::filesystem::path& file) {
 
 void BookmarkTab::exportCsv(const std::filesystem::path& file) {
     try {
-        // new FileOutputStream: the file exists, empty, before the first bookmark is read
-        createForWriting(file, toUtf8(file.wstring()));
+        // every line first, so that a bookmark that fails leaves no file behind, where Java left an
+        // empty one
         std::string text;
         for (int i = 0; i < bookmarks_->rowCount(); ++i)
             text += bookmark(bookmarks_->row(i)).toString() + "\r\n";
+        createForWriting(file, toUtf8(file.wstring()));
         std::ofstream out(file, std::ios::binary);
         out << text;
     } catch (const Error& error) {

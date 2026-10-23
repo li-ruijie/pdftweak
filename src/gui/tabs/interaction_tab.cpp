@@ -18,11 +18,11 @@ std::vector<std::wstring> wide(const std::vector<std::string>& items) {
     return result;
 }
 
-// The NullPointerException of unboxing a cell left empty, which Java's run did not catch.
+// A number cell left empty, where Java's unboxing threw a NullPointerException it did not report.
 int integer(const Value& value) {
     if (const auto* number = std::get_if<int>(&value))
         return *number;
-    throw Error(Error::Kind::Document, "java.lang.NullPointerException");
+    throw Error(Error::Kind::Io, "Please fill in every cell of the transitions table.");
 }
 
 struct Transition {
@@ -96,7 +96,8 @@ Operation InteractionTab::prepare() {
             const auto* name = std::get_if<std::wstring>(&row[2]);
             const auto found = name == nullptr ? names.end() : std::find(names.begin(), names.end(), *name);
             if (found == names.end())
-                throw Error(Error::Kind::Document, "java.lang.RuntimeException");
+                throw Error(Error::Kind::Io,
+                            "Unknown transition: " + (name == nullptr ? std::string() : toUtf8(*name)));
             t.type = static_cast<int>(found - names.begin());
             t.duration = integer(row[3]);
             t.pageDuration = integer(row[4]);
@@ -130,8 +131,12 @@ Operation InteractionTab::prepare() {
                     continue;
                 if (t.to > pages)
                     t.to = pages;
-                for (int j = t.from; j <= t.to; ++j)
+                for (int j = t.from; j <= t.to; ++j) {
+                    // a page before the first, where Java's setTransition indexed outside its array
+                    if (j < 1)
+                        throw Error(Error::Kind::Io, "Page " + std::to_string(j) + " does not exist.");
                     tweak.setTransition(j, t.type, t.duration, t.pageDuration);
+                }
             }
         }
         if (preferences)

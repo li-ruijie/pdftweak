@@ -758,8 +758,12 @@ TEST(gui_bookmarkTabImportsExportsAndRuns) {
           (std::vector<std::string>{"Error reading file: Cannot parse bookmark",
                                     "Error reading file: missing.csv (The system cannot find the "
                                     "file specified)"}));
-    table.addRow({1, false, std::wstring(L"x"), 1, std::wstring(), false, false, std::wstring(L" A=\"1\"")});
+    table.addRow(
+        {1, false, std::wstring(L"x"), 1, std::wstring(), false, false, std::wstring(L" A=\"1\"")});
     CHECK_EQUAL(runError(window, "bad.pdf"), std::string("More options incorrect"));
+    tab.exportCsv("failed.csv");
+    CHECK(!fs::exists("failed.csv"));
+    CHECK_EQUAL(messages.seen.back(), std::string("Error reading file: More options incorrect"));
 }
 
 // AttachmentTab: Remove takes the selected files out of the list, and a run embeds the others as
@@ -807,7 +811,11 @@ TEST(gui_interactionTabRunMatchesTheCommandLine) {
             "One_Column", "-viewpref", "Display_document_title=true", "cli.pdf"});
     CHECK_EQUAL(describe("gui.pdf"), describe("cli.pdf"));
     table.row(0)[3] = std::monostate{};
-    CHECK_EQUAL(runError(window, "bad.pdf"), std::string("java.lang.NullPointerException"));
+    CHECK_EQUAL(runError(window, "bad.pdf"),
+                std::string("Please fill in every cell of the transitions table."));
+    table.row(0)[3] = 3;
+    table.row(0)[0] = -5;
+    CHECK_EQUAL(runError(window, "bad.pdf"), std::string("Page -1 does not exist."));
 }
 
 // DocumentInfoTab: Load lists the input's information, Add predefined adds a known name, and a run
