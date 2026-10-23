@@ -26,9 +26,7 @@ namespace {
 // "Page 1" in Helvetica 12 is 38.028 points wide (P 667, a g e 556, space 278, 1 556).
 const float kPage1Width = 38.028f;
 
-bool approx(float a, float b) {
-    return std::fabs(a - b) < 0.01f;
-}
+bool approx(float a, float b) { return std::fabs(a - b) < 0.01f; }
 
 } // namespace
 

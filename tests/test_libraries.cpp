@@ -51,9 +51,7 @@ int mupdfRender(const std::string& pdf, int* pageCount, int* width, int* height)
         fz_drop_stream(ctx, stream);
         fz_drop_buffer(ctx, buffer);
     }
-    fz_catch(ctx) {
-        ok = 0;
-    }
+    fz_catch(ctx) { ok = 0; }
     fz_drop_context(ctx);
     return ok;
 }
@@ -94,7 +92,7 @@ TEST(unit_mupdfRendersACompressedPdfFromQpdf) {
 }
 
 TEST(unit_libtiffWritesEveryCompression) {
-    const uint16_t compressions[] = {COMPRESSION_NONE, COMPRESSION_LZW, COMPRESSION_PACKBITS,
+    const uint16_t compressions[] = {COMPRESSION_NONE, COMPRESSION_LZW,           COMPRESSION_PACKBITS,
                                      COMPRESSION_JPEG, COMPRESSION_ADOBE_DEFLATE, COMPRESSION_DEFLATE};
     for (const uint16_t compression : compressions) {
         CHECK(TIFFIsCODECConfigured(compression));

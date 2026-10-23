@@ -17,7 +17,7 @@ struct FixturePage {
 };
 
 struct FixtureOptions {
-    int linkPage = 0;   // a page with an internal link to the top-left corner of linkTarget, or 0
+    int linkPage = 0; // a page with an internal link to the top-left corner of linkTarget, or 0
     int linkTarget = 0;
     // Document information as (key without slash, UTF-8 value), added to the Producer, CreationDate,
     // and ModDate that iText writes.

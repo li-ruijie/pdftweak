@@ -51,8 +51,10 @@ std::string join(const std::vector<std::string>& values) {
 } // namespace
 
 TEST(unit_textConvertsBetweenEncodings) {
-    CHECK_EQUAL(toUtf8(L"Report über"), std::string("Report \xc3\xbc" "ber"));
-    CHECK(fromUtf8("Report \xc3\xbc" "ber") == L"Report über");
+    CHECK_EQUAL(toUtf8(L"Report über"), std::string("Report \xc3\xbc"
+                                                    "ber"));
+    CHECK(fromUtf8("Report \xc3\xbc"
+                   "ber") == L"Report über");
     // Java's getBytes("ISO-8859-1") replaces each character outside Latin-1 with one '?'
     CHECK_EQUAL(toLatin1("\xc3\xbc\xe2\x82\xac\xf0\x9f\x98\x80x"), std::string("\xfc??x"));
 }
@@ -121,11 +123,19 @@ TEST(unit_integerListParsesCommas) {
 TEST(unit_pageRangesSelectReverseAndPad) {
     // The cases of OperationTests.main_pageRangesSelectReverseAndPad on a six-page file, with
     // from and to as the -i option gives them (negative counts from the end).
-    struct Case { int from, to; bool odd, even; std::vector<int> empty; std::string expected; };
+    struct Case {
+        int from, to;
+        bool odd, even;
+        std::vector<int> empty;
+        std::string expected;
+    };
     const Case cases[] = {
-        {3, 4, true, true, {0}, "[3, 4]"},          {-2, -2, true, true, {0}, "[5]"},
-        {5, -1, true, true, {0}, "[5, 6]"},         {4, 2, true, true, {0}, "[4, 3, 2]"},
-        {1, -1, false, true, {0}, "[2, 4, 6]"},     {1, -1, true, false, {0}, "[1, 3, 5]"},
+        {3, 4, true, true, {0}, "[3, 4]"},
+        {-2, -2, true, true, {0}, "[5]"},
+        {5, -1, true, true, {0}, "[5, 6]"},
+        {4, 2, true, true, {0}, "[4, 3, 2]"},
+        {1, -1, false, true, {0}, "[2, 4, 6]"},
+        {1, -1, true, false, {0}, "[1, 3, 5]"},
         {1, -1, true, true, {2}, "[-1, -1, 1, 2, 3, 4, 5, 6]"},
         {1, -3, true, false, {1}, "[-1, 1, 3]"},
     };
@@ -185,11 +195,8 @@ TEST(unit_shuffleRulesRoundTrip) {
 
 TEST(unit_bookmarkLinesRoundTrip) {
     const char* lines[] = {
-        "1;O;Part;1 Fit",
-        "2;OBI;Chapter \\3B one;2 XYZ 0 800 0",
-        "1;O;Chapter;1;B=\\221\\22 A=\\222\\22",
-        "1;;No page;0",
-        "-1;I;Tab\\09 and quote \\27;3",
+        "1;O;Part;1 Fit", "2;OBI;Chapter \\3B one;2 XYZ 0 800 0", "1;O;Chapter;1;B=\\221\\22 A=\\222\\22",
+        "1;;No page;0",   "-1;I;Tab\\09 and quote \\27;3",
     };
     for (const char* line : lines)
         CHECK_EQUAL(parseBookmark(line).toString(), std::string(line));

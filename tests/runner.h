@@ -37,16 +37,16 @@ void checkEqual(const A& actual, const B& expected, const char* text, const char
 
 } // namespace pdftweak::test
 
-#define TEST(name)                                                                                 \
-    static void name();                                                                            \
-    static const ::pdftweak::test::Registration registration_##name(#name, name);                  \
+#define TEST(name)                                                                                         \
+    static void name();                                                                                    \
+    static const ::pdftweak::test::Registration registration_##name(#name, name);                          \
     static void name()
 
-#define CHECK(condition)                                                                           \
-    do {                                                                                           \
-        if (!(condition))                                                                          \
-            ::pdftweak::test::fail(__FILE__, __LINE__, "CHECK(" #condition ")");                   \
+#define CHECK(condition)                                                                                   \
+    do {                                                                                                   \
+        if (!(condition))                                                                                  \
+            ::pdftweak::test::fail(__FILE__, __LINE__, "CHECK(" #condition ")");                           \
     } while (false)
 
-#define CHECK_EQUAL(actual, expected)                                                              \
+#define CHECK_EQUAL(actual, expected)                                                                      \
     ::pdftweak::test::checkEqual((actual), (expected), #actual, __FILE__, __LINE__)

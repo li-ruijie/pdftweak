@@ -68,8 +68,8 @@ int wmain() {
         return fail(L"SetInformationJobObject");
 
     PROCESS_INFORMATION process{};
-    if (!CreateProcessW(exe.c_str(), commandLine.data(), nullptr, nullptr, TRUE, CREATE_SUSPENDED,
-                        nullptr, nullptr, &startup, &process))
+    if (!CreateProcessW(exe.c_str(), commandLine.data(), nullptr, nullptr, TRUE, CREATE_SUSPENDED, nullptr,
+                        nullptr, &startup, &process))
         return fail(L"CreateProcessW");
     if (!AssignProcessToJobObject(job, process.hProcess)) {
         TerminateProcess(process.hProcess, 1);

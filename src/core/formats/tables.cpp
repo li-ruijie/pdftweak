@@ -26,9 +26,9 @@ const std::vector<std::string>& transitionNames() {
 }
 
 const std::vector<std::string>& permissionNames() {
-    static const std::vector<std::string> names = {"Printing", "ModifyContents", "Copy",
-                                                   "ModifyAnnotations", "FillIn", "ScreenReaders",
-                                                   "Assembly", "HQPrinting"};
+    static const std::vector<std::string> names = {"Printing",          "ModifyContents", "Copy",
+                                                   "ModifyAnnotations", "FillIn",         "ScreenReaders",
+                                                   "Assembly",          "HQPrinting"};
     return names;
 }
 
@@ -50,9 +50,9 @@ const std::vector<std::string>& pageModeNames() {
 }
 
 const std::vector<std::string>& pageLayoutNames() {
-    static const std::vector<std::string> names = {"Single Page", "One Column", "Two Columns Left",
-                                                   "Two Columns Right", "Two Pages Left",
-                                                   "Two Pages Right"};
+    static const std::vector<std::string> names = {"Single Page",      "One Column",
+                                                   "Two Columns Left", "Two Columns Right",
+                                                   "Two Pages Left",   "Two Pages Right"};
     return names;
 }
 

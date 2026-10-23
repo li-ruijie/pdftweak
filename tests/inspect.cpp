@@ -344,8 +344,7 @@ std::string verifySignature(const std::filesystem::path& pdf, const std::string&
         std::string digest(20, '\0');
         if (BCryptHash(BCRYPT_SHA1_ALG_HANDLE, nullptr, 0,
                        reinterpret_cast<PUCHAR>(const_cast<char*>(data.data())),
-                       static_cast<ULONG>(data.size()),
-                       reinterpret_cast<PUCHAR>(digest.data()), 20) != 0)
+                       static_cast<ULONG>(data.size()), reinterpret_cast<PUCHAR>(digest.data()), 20) != 0)
             throw Failure("BCryptHash failed");
         if (digest != signedDigest)
             throw Failure(pdf.filename().string() + " signed digest does not match the byte ranges");

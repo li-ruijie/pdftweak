@@ -26,7 +26,7 @@ struct ShuffleRule {
     std::string pageString() const;    // "+1", "-4", or "3"
     std::string offsetXString() const; // "+0.0%", as Java prints it
     std::string offsetYString() const;
-    int rotateAngle() const;           // 0, 90, 180, or 270
+    int rotateAngle() const; // 0, 90, 180, or 270
     std::string toString() const;
 };
 

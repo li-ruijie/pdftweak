@@ -91,7 +91,7 @@ ShuffleRule parseRule(std::string_view text) {
         throw Error(Error::Kind::Document, rule);
     ShuffleRule r;
     r.newPageBefore = m[1].length() == 1;
-    r.base = m[2].length() == 0 ? ShuffleRule::Base::Absolute
+    r.base = m[2].length() == 0     ? ShuffleRule::Base::Absolute
              : m[2].str()[0] == '+' ? ShuffleRule::Base::Beginning
                                     : ShuffleRule::Base::End;
     r.page = javaParseInt(m[3].str());

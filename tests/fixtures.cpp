@@ -239,14 +239,12 @@ std::filesystem::path pkcs12(const std::filesystem::path& dir) {
                 "NCryptCreatePersistedKey");
     DWORD length = 2048;
     DWORD policy = NCRYPT_ALLOW_EXPORT_FLAG | NCRYPT_ALLOW_PLAINTEXT_EXPORT_FLAG;
-    checkStatus(
-        NCryptSetProperty(k.key, NCRYPT_LENGTH_PROPERTY, reinterpret_cast<PBYTE>(&length), sizeof length,
-                          0),
-        "NCryptSetProperty length");
-    checkStatus(
-        NCryptSetProperty(k.key, NCRYPT_EXPORT_POLICY_PROPERTY, reinterpret_cast<PBYTE>(&policy),
-                          sizeof policy, 0),
-        "NCryptSetProperty export policy");
+    checkStatus(NCryptSetProperty(k.key, NCRYPT_LENGTH_PROPERTY, reinterpret_cast<PBYTE>(&length),
+                                  sizeof length, 0),
+                "NCryptSetProperty length");
+    checkStatus(NCryptSetProperty(k.key, NCRYPT_EXPORT_POLICY_PROPERTY, reinterpret_cast<PBYTE>(&policy),
+                                  sizeof policy, 0),
+                "NCryptSetProperty export policy");
     checkStatus(NCryptFinalizeKey(k.key, 0), "NCryptFinalizeKey");
 
     const wchar_t* subjectText = L"CN=PDF Tweak Test";

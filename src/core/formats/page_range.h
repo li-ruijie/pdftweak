@@ -20,7 +20,7 @@ struct PageRange {
 
 // Builds a range as the PdfPageRange constructor does, where a negative from or to counts from
 // the end, so that -1 is the last page of a file with pageCount pages.
-PageRange makePageRange(int inputIndex, int pageCount, int from, int to, bool includeOdd,
-                        bool includeEven, std::vector<int> emptyBefore);
+PageRange makePageRange(int inputIndex, int pageCount, int from, int to, bool includeOdd, bool includeEven,
+                        std::vector<int> emptyBefore);
 
 } // namespace pdftweak::formats

@@ -2,8 +2,8 @@
 
 namespace pdftweak::formats {
 
-PageRange makePageRange(int inputIndex, int pageCount, int from, int to, bool includeOdd,
-                        bool includeEven, std::vector<int> emptyBefore) {
+PageRange makePageRange(int inputIndex, int pageCount, int from, int to, bool includeOdd, bool includeEven,
+                        std::vector<int> emptyBefore) {
     PageRange range;
     range.inputIndex = inputIndex;
     range.from = from < 0 ? from + pageCount + 1 : from;
