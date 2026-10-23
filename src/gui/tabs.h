@@ -27,6 +27,8 @@ public:
     // The bookmarks of the input, for the Load button of the Bookmarks tab.
     std::vector<formats::Bookmark> loadBookmarks();
     int batchLength() const;
+    // The names the progress panel shows for the files of a run.
+    std::vector<std::wstring> fileNames() const;
     void setUseTempFiles(bool useTempFiles) { useTempFiles_ = useTempFiles; }
 
     // What Select... does with the files chosen.

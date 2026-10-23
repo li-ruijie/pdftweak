@@ -5,12 +5,18 @@
 #include "core/pdf/input_file.h"
 #include "gui/tab.h"
 
+#include <functional>
 #include <memory>
 #include <vector>
+
+struct ITaskbarList3;
 
 namespace pdftweak::gui {
 
 class InputTab;
+class Run;
+struct RunStatus;
+class GuiProgress;
 
 class MainWindow {
 public:
@@ -37,8 +43,16 @@ public:
     const std::shared_ptr<pdf::InputFile>& inputFile() const { return inputFile_; }
     void setInputFile(std::shared_ptr<pdf::InputFile> file) { inputFile_ = std::move(file); }
 
-    // runTweaks: checks every tab, then runs each tab's work on each file of the batch.
+    // runTweaks: checks every tab, then runs each tab's work on each file of the batch on a worker
+    // thread, with the progress panel in place of the buttons. Returns at once.
     void runTweaks();
+    bool running() const { return run_ != nullptr; }
+    // Cancel: the run stops at the next page or stage boundary.
+    void cancel();
+    // Called on the worker thread as each stage starts, for the tests.
+    void setStageObserver(std::function<void(GuiProgress&, const RunStatus&)> observer) {
+        stageObserver_ = std::move(observer);
+    }
 
 private:
     class Content;
@@ -46,6 +60,13 @@ private:
     std::unique_ptr<Content> content_;
     std::unique_ptr<Frame> frame_;
     std::shared_ptr<pdf::InputFile> inputFile_;
+    std::unique_ptr<Run> run_;
+    std::function<void(GuiProgress&, const RunStatus&)> stageObserver_;
+    bool quitAfterRun_ = false;
+    ITaskbarList3* taskbar_ = nullptr;
+
+    void showProgress();
+    void finishRun();
 };
 
 } // namespace pdftweak::gui

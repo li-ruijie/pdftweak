@@ -147,6 +147,8 @@ public:
     // Keys the frame handles before the dialog keys, such as Ctrl+Tab. Returns whether it used the
     // message.
     std::function<bool(const MSG&)> onKey;
+    // The cursor over a window of the frame. Returns whether it set one.
+    std::function<bool(HWND over)> onSetCursor;
 
     // Shows the frame, then runs a message loop until it is destroyed, with the owner disabled.
     void runModal();

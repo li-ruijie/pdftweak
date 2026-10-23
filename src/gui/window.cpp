@@ -536,6 +536,10 @@ LRESULT Frame::handle(UINT msg, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         break;
+    case WM_SETCURSOR:
+        if (onSetCursor && LOWORD(lParam) == HTCLIENT && onSetCursor(reinterpret_cast<HWND>(wParam)))
+            return TRUE;
+        break;
     case WM_CLOSE:
         if (onClose) {
             const auto handler = onClose;

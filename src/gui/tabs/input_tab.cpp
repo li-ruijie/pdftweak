@@ -257,6 +257,16 @@ std::vector<formats::Bookmark> InputTab::loadBookmarks() {
     return pdf::readBookmarks(*inputFiles_[0]->qpdf(), 1);
 }
 
+std::vector<std::wstring> InputTab::fileNames() const {
+    std::vector<std::wstring> names;
+    for (int i = 0; i < batchLength(); ++i)
+        names.push_back(inputFiles_[static_cast<size_t>(isChecked(batchProcessing_) ? i : 0)]
+                            ->file()
+                            .filename()
+                            .wstring());
+    return names;
+}
+
 int InputTab::batchLength() const {
     return isChecked(batchProcessing_) ? static_cast<int>(inputFiles_.size()) : 1;
 }

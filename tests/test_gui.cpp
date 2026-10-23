@@ -14,6 +14,7 @@
 #include "core/text.h"
 #include "gui/dialogs.h"
 #include "gui/main_window.h"
+#include "gui/run.h"
 #include "gui/table_editor.h"
 #include "gui/tabs.h"
 
@@ -22,6 +23,7 @@
 #include <objbase.h>
 
 #include <filesystem>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -287,6 +289,14 @@ void pump() {
 
 void type(HWND field, const std::wstring& text) { gui::setWindowText(field, text); }
 
+// Runs the window's messages until the worker of a run has ended and its result has been shown.
+void waitForRun(gui::MainWindow& window) {
+    while (window.running()) {
+        MsgWaitForMultipleObjects(0, nullptr, FALSE, 100, QS_ALLINPUT);
+        pump();
+    }
+}
+
 // Picks an item as a user does, which runs the combo box's handler.
 void choose(gui::Tab& tab, HWND combo, int index) { tab.chooseItem(combo, index); }
 
@@ -296,6 +306,7 @@ void runTabs(gui::MainWindow& window, const fs::path& output) {
     gui::setWindowText(window.tab<gui::OutputTab>().outputFile(), output.wstring());
     Messages messages;
     window.runTweaks();
+    waitForRun(window);
     if (messages.seen.empty())
         throw Failure("the run ended without a message");
     const std::string& last = messages.seen.back();
@@ -891,4 +902,49 @@ TEST(gui_encryptSignTabLoadsAndRuns) {
     choose(tab, tab.certLevel(), 1);
     runTabs(window, "signed.pdf");
     CHECK_EQUAL(verifySignature("signed.pdf"), std::string("/adbe.pkcs7.detached"));
+}
+
+// Spec 9.1: a batch runs on the worker thread with the progress panel naming each file and stage,
+// and ends with "Finished".
+TEST(gui_runShowsProgressAndFinishesABatch) {
+    pdfOfSizes(".", "a.pdf", {kA4, kA4});
+    pdfOfSizes(".", "b.pdf", {kA4});
+    gui::MainWindow window(false);
+    click(window.inputTab().batchProcessing());
+    window.inputTab().addFiles({"a.pdf", "b.pdf"});
+    click(window.tab<gui::PageSizeTab>().scalePages());
+    std::mutex mutex;
+    std::vector<std::wstring> lines;
+    window.setStageObserver([&](gui::GuiProgress&, const gui::RunStatus& status) {
+        const std::lock_guard lock(mutex);
+        lines.push_back(status.fileLine() + L" | " + status.stageLine());
+    });
+    runTabs(window, "<F>-out.pdf");
+    CHECK(fs::exists("a-out.pdf") && fs::exists("b-out.pdf"));
+    CHECK(lines == (std::vector<std::wstring>{L"File 1 of 2: a.pdf | Page Size: Scaling, page 1 of 2",
+                                              L"File 1 of 2: a.pdf | Output: Writing output, 0 %",
+                                              L"File 2 of 2: b.pdf | Page Size: Scaling",
+                                              L"File 2 of 2: b.pdf | Output: Writing output, 0 %"}));
+    CHECK(!window.running() && IsWindowEnabled(window.tab(0).handle()));
+}
+
+// Spec 9.1: Cancel stops the run during the final write of the second file, which removes that
+// output and keeps the output of the first.
+TEST(gui_cancelStopsTheRunAndKeepsFinishedFiles) {
+    Messages messages;
+    pdfOfSizes(".", "a.pdf", {kA4});
+    pdfOfSizes(".", "b.pdf", {kA4});
+    gui::MainWindow window(false);
+    click(window.inputTab().batchProcessing());
+    window.inputTab().addFiles({"a.pdf", "b.pdf"});
+    gui::setWindowText(window.tab<gui::OutputTab>().outputFile(), L"<F>-out.pdf");
+    window.setStageObserver([](gui::GuiProgress& progress, const gui::RunStatus& status) {
+        if (status.file == 1 && status.stage == "Writing output")
+            progress.cancel();
+    });
+    window.runTweaks();
+    CHECK(window.running());
+    waitForRun(window);
+    CHECK(fs::exists("a-out.pdf") && !fs::exists("b-out.pdf"));
+    CHECK(messages.seen == std::vector<std::string>{"PDF Tweak: Cancelled after 1 of 2 files"});
 }

@@ -304,6 +304,24 @@ std::vector<int> FormLayout::sizes(const std::vector<Spec>& specs, bool horizont
                 result[growing[g]] +=
                     extra / static_cast<int>(growing.size()) +
                     (g + 1 == growing.size() ? extra % static_cast<int>(growing.size()) : 0);
+        } else if (extra < 0) {
+            // less space than preferred: the growing columns or rows give it up first, in equal
+            // shares and not below nothing, as their components can shrink
+            int deficit = -extra;
+            while (deficit > 0) {
+                std::vector<size_t> open;
+                for (const size_t g : growing)
+                    if (result[g] > 0)
+                        open.push_back(g);
+                if (open.empty())
+                    break;
+                const int share = std::max(1, deficit / static_cast<int>(open.size()));
+                for (const size_t g : open) {
+                    const int taken = std::min({share, result[g], deficit});
+                    result[g] -= taken;
+                    deficit -= taken;
+                }
+            }
         }
     }
     return result;
