@@ -3,7 +3,7 @@
 PDF Tweak crops, rotates, scales, shuffles (n-up and booklets), watermarks, numbers, and bookmarks the
 pages of PDF files, edits page labels, attachments, viewer preferences, and document information,
 encrypts and signs documents, bursts them into single pages, and exports pages as images. It is a C++
-port of jPDF Tweak 1.2.2 with a native Windows interface, and it keeps jPDF Tweak's command-line
+port of jPDF Tweak 1.3.0 with a native Windows interface, and it keeps jPDF Tweak's command-line
 syntax and file formats.
 
 This version is under development. The command line accepts only `-version` until milestone 2.
