@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
     }
     // build\x64\<Configuration>\pdftweak-tests.exe -> build\test-work
     const std::filesystem::path work = binaryFolder().parent_path().parent_path() / "test-work";
-    int run = 0, failed = 0;
+    int run = 0, failed = 0, skipped = 0;
     for (int i = 1; i < argc; ++i) {
         const std::string prefix = std::string(argv[i]) + "_";
         for (const auto& [name, function] : registry()) {
@@ -63,13 +63,19 @@ int main(int argc, char** argv) {
             try {
                 function();
                 std::printf("PASS %s\n", name.c_str());
+            } catch (const Skipped& e) {
+                ++skipped;
+                std::printf("SKIP %s\n     %s\n", name.c_str(), e.what());
             } catch (const std::exception& e) {
                 ++failed;
                 std::printf("FAIL %s\n     %s\n", name.c_str(), e.what());
             }
         }
     }
-    std::printf("%d run, %d failed\n", run, failed);
+    if (skipped == 0)
+        std::printf("%d run, %d failed\n", run, failed);
+    else
+        std::printf("%d run, %d failed, %d skipped\n", run, failed, skipped);
     if (run == 0) {
         std::fprintf(stderr, "No test matched the groups given.\n");
         return 2;

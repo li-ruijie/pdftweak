@@ -15,6 +15,11 @@ struct Failure : std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
+// Thrown by a test that cannot run here, such as a parity test without Java, with the reason.
+struct Skipped : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
 using TestFunction = void (*)();
 
 struct Registration {
