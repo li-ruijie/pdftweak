@@ -6,6 +6,7 @@
 #include "cli_run.h"
 #include "describe.h"
 #include "fixtures.h"
+#include "inspect.h"
 
 #include "core/error.h"
 #include "core/formats/page_dimension.h"
@@ -289,21 +290,19 @@ void type(HWND field, const std::wstring& text) { gui::setWindowText(field, text
 // Picks an item as a user does, which runs the combo box's handler.
 void choose(gui::Tab& tab, HWND combo, int index) { tab.chooseItem(combo, index); }
 
-// MainForm.runTweaks for one output file: checkRun of every tab, then the work of every tab, then
-// the output written as the Output tab writes a PDF. Throws the Error a tab or the core throws.
+// Runs the tabs as the Run button does, with the output file named in the Output tab. Throws
+// Error with the message of the error box when the run fails.
 void runTabs(gui::MainWindow& window, const fs::path& output) {
-    for (int i = 0; i < window.tabCount(); ++i)
-        window.tab(i).checkRun();
-    std::vector<gui::Operation> operations;
-    for (int i = 0; i < window.tabCount(); ++i)
-        if (gui::Operation operation = window.tab(i).prepare())
-            operations.push_back(std::move(operation));
-    NullProgress progress;
-    gui::RunContext context{0, progress, nullptr};
-    for (const gui::Operation& operation : operations)
-        operation(context);
-    context.tweak->writeOutput(toUtf8(output.wstring()), false, false, false, false, false);
-    context.tweak->cleanup();
+    gui::setWindowText(window.tab<gui::OutputTab>().outputFile(), output.wstring());
+    Messages messages;
+    window.runTweaks();
+    if (messages.seen.empty())
+        throw Failure("the run ended without a message");
+    const std::string& last = messages.seen.back();
+    if (last.starts_with("Error: "))
+        throw Error(Error::Kind::Io, last.substr(7));
+    if (last != "PDF Tweak: Finished")
+        throw Failure("the run ended with " + last);
 }
 
 std::string runError(gui::MainWindow& window, const fs::path& output) {
@@ -562,4 +561,326 @@ TEST(gui_pageNumberTabLoadsAndRuns) {
     type(table.startEditing(1, 3), L"0");
     CHECK(table.stopEditing());
     CHECK_EQUAL(runError(window, "bad.pdf"), std::string("Logical page numbers must be positive"));
+}
+
+namespace {
+
+// The index of a combo box item by its text.
+int itemIndex(HWND combo, const std::wstring& text) {
+    for (int i = 0; i < gui::itemCount(combo); ++i)
+        if (gui::itemText(combo, i) == text)
+            return i;
+    throw Failure("no item " + toUtf8(text));
+}
+
+} // namespace
+
+// RegressionTests.gui_outputTabDisablesTransparencyForTiffJpeg: the Output tab offers transparency
+// for a TIFF only while it is not JPEG-compressed.
+TEST(gui_outputTabDisablesTransparencyForTiffJpeg) {
+    gui::MainWindow window(false);
+    auto& tab = window.tab<gui::OutputTab>();
+    bool enabled[6];
+    click(tab.multipageTiff());
+    enabled[0] = gui::isEnabled(tab.transparent());
+    choose(tab, tab.compressionType(), 2); // JPEG
+    enabled[1] = gui::isEnabled(tab.transparent());
+    choose(tab, tab.colorMode(), 1); // GRAY
+    choose(tab, tab.colorMode(), 0); // RGB
+    enabled[2] = gui::isEnabled(tab.transparent());
+    click(tab.multipageTiff());
+    click(tab.burst());
+    choose(tab, tab.fileType(), 7); // TIFF
+    enabled[3] = gui::isEnabled(tab.transparent());
+    choose(tab, tab.fileType(), 2); // PNG
+    enabled[4] = gui::isEnabled(tab.transparent());
+    choose(tab, tab.fileType(), 7);
+    choose(tab, tab.compressionType(), 1); // LZW
+    enabled[5] = gui::isEnabled(tab.transparent());
+    CHECK(enabled[0]);
+    CHECK(!enabled[1]);
+    CHECK(!enabled[2]);
+    CHECK(!enabled[3]);
+    CHECK(enabled[4]);
+    CHECK(enabled[5]);
+}
+
+// RegressionTests.gui_outputTabKeepsQualityForTiffJpeg: the quality slider stays for a TIFF
+// compression that uses it when the file type changes.
+TEST(gui_outputTabKeepsQualityForTiffJpeg) {
+    gui::MainWindow window(false);
+    auto& tab = window.tab<gui::OutputTab>();
+    bool enabled[5];
+    click(tab.multipageTiff());
+    enabled[0] = gui::isEnabled(tab.qualitySlider());
+    choose(tab, tab.compressionType(), 2); // JPEG
+    enabled[1] = gui::isEnabled(tab.qualitySlider());
+    click(tab.multipageTiff());
+    click(tab.multipageTiff());
+    enabled[2] = gui::isEnabled(tab.qualitySlider());
+    click(tab.multipageTiff());
+    click(tab.burst());
+    choose(tab, tab.fileType(), 7); // TIFF
+    enabled[3] = gui::isEnabled(tab.qualitySlider());
+    choose(tab, tab.compressionType(), 1); // LZW
+    enabled[4] = gui::isEnabled(tab.qualitySlider());
+    CHECK(!enabled[0]);
+    CHECK(enabled[1]);
+    CHECK(enabled[2]);
+    CHECK(enabled[3]);
+    CHECK(!enabled[4]);
+}
+
+// RegressionTests.gui_outputTabOffersQualityForTiffDeflate: DEFLATE, like ZLIB, takes the quality
+// as its compression level.
+TEST(gui_outputTabOffersQualityForTiffDeflate) {
+    gui::MainWindow window(false);
+    auto& tab = window.tab<gui::OutputTab>();
+    click(tab.multipageTiff());
+    choose(tab, tab.compressionType(), 5); // DEFLATE
+    CHECK(gui::isEnabled(tab.qualitySlider()));
+    click(tab.multipageTiff());
+    click(tab.multipageTiff());
+    CHECK(gui::isEnabled(tab.qualitySlider()));
+}
+
+// OutputTab: the chosen name gets the extension of the output type, which follows burst, the file
+// type, and the multipage TIFF, an existing file is overwritten only after a yes, the info icon
+// shows for images, and checkRun asks for a name and for variables in batch mode.
+TEST(gui_outputTabNamesTheOutputAsJava) {
+    Messages messages;
+    gui::MainWindow window(false);
+    auto& tab = window.tab<gui::OutputTab>();
+    const std::wstring base = fs::absolute("out").wstring();
+    const auto output = [&tab] { return gui::windowText(tab.outputFile()); };
+    tab.chooseOutput("out");
+    CHECK(output() == base + L".pdf");
+    click(tab.burst());
+    CHECK(gui::isEnabled(tab.fileType()) && tab.warningText().empty());
+    choose(tab, tab.fileType(), 2); // PNG
+    CHECK(output() == base + L".png");
+    CHECK(tab.warningText() == L"Images will be exported in 72 dpi");
+    CHECK(gui::itemCount(tab.colorMode()) == 2 && gui::itemText(tab.colorMode(), 1) == L"Grayscale");
+    click(tab.multipageTiff());
+    CHECK(!gui::isChecked(tab.burst()) && !gui::isEnabled(tab.fileType()));
+    CHECK(output() == base + L".tiff");
+    CHECK(gui::itemCount(tab.colorMode()) == 4);
+    click(tab.multipageTiff());
+    CHECK(output() == base + L".pdf");
+    CHECK(gui::isEnabled(tab.optimizeSize()) && !gui::isEnabled(tab.colorMode()));
+    click(tab.uncompressed());
+    CHECK(gui::windowText(tab.pageMarks()) == L"Add PdfTk page marks");
+    click(tab.uncompressed());
+    CHECK(gui::windowText(tab.pageMarks()) == L"Remove PdfTk page marks");
+
+    writeFile("taken.pdf", "x");
+    messages.answer = IDNO;
+    tab.chooseOutput("taken.pdf");
+    CHECK(output() == base + L".pdf");
+    messages.answer = IDYES;
+    tab.chooseOutput("taken.pdf");
+    CHECK(output() == fs::absolute("taken.pdf").wstring());
+    CHECK(messages.seen == (std::vector<std::string>{"Confirm Overwrite: Overwrite existing file?",
+                                                     "Confirm Overwrite: Overwrite existing file?"}));
+
+    pdfOfSizes(".", "a.pdf", {kA4});
+    pdfOfSizes(".", "b.pdf", {kA4});
+    gui::setWindowText(tab.outputFile(), L"");
+    window.inputTab().addFiles({"a.pdf"});
+    CHECK_EQUAL(runError(window, ""), std::string("No output file selected"));
+    click(window.inputTab().clearButton());
+    click(window.inputTab().batchProcessing());
+    window.inputTab().addFiles({"a.pdf", "b.pdf"});
+    CHECK_EQUAL(runError(window, "out.pdf"),
+                std::string("Variables in output file name required for batch mode"));
+    runTabs(window, "<F>-batch.pdf");
+    CHECK(fs::exists("a-batch.pdf") && fs::exists("b-batch.pdf"));
+}
+
+// OutputTab: a multipage TIFF and burst images are the files of -oi and -ob with the image options.
+TEST(gui_outputTabExportsImagesAsTheCommandLine) {
+    pdfWithPages(".", "in.pdf", "Page ", 2);
+    gui::MainWindow window(false);
+    window.inputTab().addFiles({"in.pdf"});
+    auto& tab = window.tab<gui::OutputTab>();
+    click(tab.multipageTiff());
+    choose(tab, tab.colorMode(), 1);       // GRAY
+    choose(tab, tab.compressionType(), 1); // LZW
+    runTabs(window, "gui.tiff");
+    runCli({"in.pdf", "-colormode", "GRAY", "-tiffcompression", "LZW", "-oi", "cli.tiff"});
+    CHECK(readFile("gui.tiff") == readFile("cli.tiff"));
+
+    click(tab.burst());
+    choose(tab, tab.fileType(), 2); // PNG
+    runTabs(window, "gui-*.png");
+    runCli({"in.pdf", "-burstfiletype", "PNG", "-ob", "cli-*.png"});
+    for (const char* page : {"1", "2"})
+        CHECK(readFile(std::string("gui-") + page + ".png") ==
+              readFile(std::string("cli-") + page + ".png"));
+}
+
+// BookmarkTab: Export to CSV writes the lines of -savebookmarks, Import from CSV and Import from PDF
+// read them back, Load reads the input's outline, and a run gives -bookmark's document.
+TEST(gui_bookmarkTabImportsExportsAndRuns) {
+    Messages messages;
+    pdfOfSizes(".", "in.pdf", {kA4, kA4});
+    gui::MainWindow window(false);
+    window.inputTab().addFiles({"in.pdf"});
+    auto& tab = window.tab<gui::BookmarkTab>();
+    CHECK(!gui::isEnabled(tab.load()) && !gui::isEnabled(tab.exportCsvButton()));
+    click(tab.changeBookmarks());
+    gui::TableEditor& table = tab.bookmarks();
+    table.addRow({1, false, std::wstring(L"Stale"), 1, std::wstring(), false, false, std::wstring()});
+    click(tab.load());
+    CHECK_EQUAL(table.rowCount(), 0);
+    table.addRow({1, true, std::wstring(L"Part"), 1, std::wstring(L"Fit"), false, false, std::wstring()});
+    table.addRow({2, false, std::wstring(L"Chapter; one"), 2, std::wstring(), true, true,
+                  std::wstring(L"Color=\"1 0 0\"")});
+    tab.exportCsv("bookmarks.csv");
+    const std::string lines = "1;O;Part;1 Fit\r\n2;BI;Chapter\\3B one;2;Color=\\221 0 0\\22\r\n";
+    CHECK_EQUAL(readFile("bookmarks.csv"), lines);
+    runTabs(window, "gui.pdf");
+    runCli({"in.pdf", "-loadbookmarks", "bookmarks.csv", "cli.pdf"});
+    CHECK_EQUAL(describe("gui.pdf"), describe("cli.pdf"));
+
+    table.clear();
+    writeFile("import.csv", "# a comment\n" + lines);
+    tab.importCsv("import.csv");
+    CHECK_EQUAL(table.rowCount(), 2);
+    CHECK(table.row(1)[2] == gui::Value(std::wstring(L"Chapter; one")));
+    tab.importPdf("cli.pdf");
+    CHECK_EQUAL(table.rowCount(), 2);
+    CHECK(table.row(0)[2] == gui::Value(std::wstring(L"Part")));
+    writeFile("bad.csv", "not a bookmark\n");
+    tab.importCsv("bad.csv");
+    tab.importCsv("missing.csv");
+    CHECK(messages.seen ==
+          (std::vector<std::string>{"Error reading file: Cannot parse bookmark",
+                                    "Error reading file: missing.csv (The system cannot find the "
+                                    "file specified)"}));
+    table.addRow({1, false, std::wstring(L"x"), 1, std::wstring(), false, false, std::wstring(L" A=\"1\"")});
+    CHECK_EQUAL(runError(window, "bad.pdf"), std::string("More options incorrect"));
+}
+
+// AttachmentTab: Remove takes the selected files out of the list, and a run embeds the others as
+// -attach does.
+TEST(gui_attachmentTabEmbedsTheListedFiles) {
+    pdfOfSizes(".", "in.pdf", {kA4});
+    writeFile("a.txt", "first");
+    writeFile("b.txt", "second");
+    gui::MainWindow window(false);
+    window.inputTab().addFiles({"in.pdf"});
+    auto& tab = window.tab<gui::AttachmentTab>();
+    tab.addAttachment(fs::absolute("a.txt"));
+    tab.addAttachment(fs::absolute("b.txt"));
+    SendMessageW(tab.list(), LB_SETSEL, TRUE, 0);
+    click(tab.removeButton());
+    CHECK(tab.attachments() == std::vector<fs::path>{fs::absolute("b.txt")});
+    CHECK_EQUAL(SendMessageW(tab.list(), LB_GETCOUNT, 0, 0), 1);
+    runTabs(window, "gui.pdf");
+    runCli({"in.pdf", "-attach", fs::absolute("b.txt"), "cli.pdf"});
+    CHECK_EQUAL(describe("gui.pdf"), describe("cli.pdf"));
+}
+
+// InteractionTab: a run with transitions and viewer preferences gives the document of -transition,
+// -pagemode, -pagelayout, and -viewpref, and an empty cell fails as Java's unboxing did.
+TEST(gui_interactionTabRunMatchesTheCommandLine) {
+    pdfOfSizes(".", "in.pdf", {kA4, kA4, kA4});
+    gui::MainWindow window(false);
+    window.inputTab().addFiles({"in.pdf"});
+    auto& tab = window.tab<gui::InteractionTab>();
+    click(tab.addTransitions());
+    gui::TableEditor& table = tab.transitions();
+    table.addRow({2, -1, std::wstring(L"Dissolve"), 3, 5});
+    click(tab.addPrefs());
+    CHECK(gui::isEnabled(tab.pageMode()) && !gui::isEnabled(tab.optionalPrefValue(0)));
+    choose(tab, tab.pageMode(), itemIndex(tab.pageMode(), L"Outline"));
+    choose(tab, tab.pageLayout(), itemIndex(tab.pageLayout(), L"One Column"));
+    int title = 0;
+    while (gui::windowText(tab.optionalPrefCheck(title)) != L"Display document title: ")
+        ++title;
+    click(tab.optionalPrefCheck(title));
+    CHECK(gui::isEnabled(tab.optionalPrefValue(title)));
+    choose(tab, tab.optionalPrefValue(title), itemIndex(tab.optionalPrefValue(title), L"true"));
+    runTabs(window, "gui.pdf");
+    runCli({"in.pdf", "-transition", "2-3:Dissolve,3,5", "-pagemode", "Outline", "-pagelayout",
+            "One_Column", "-viewpref", "Display_document_title=true", "cli.pdf"});
+    CHECK_EQUAL(describe("gui.pdf"), describe("cli.pdf"));
+    table.row(0)[3] = std::monostate{};
+    CHECK_EQUAL(runError(window, "bad.pdf"), std::string("java.lang.NullPointerException"));
+}
+
+// DocumentInfoTab: Load lists the input's information, Add predefined adds a known name, and a run
+// gives -docinfo's document.
+TEST(gui_documentInfoTabLoadsAndRuns) {
+    FixtureOptions options;
+    options.info = {{"Title", "Old title"}, {"Author", "Someone"}};
+    writePdf(".", "in.pdf", {{595, 842, "Page 1"}}, options);
+    gui::MainWindow window(false);
+    window.inputTab().addFiles({"in.pdf"});
+    auto& tab = window.tab<gui::DocumentInfoTab>();
+    CHECK(!gui::isEnabled(tab.infoLoad()));
+    click(tab.infoChange());
+    click(tab.infoLoad());
+    gui::TableEditor& table = tab.infoEntries();
+    std::vector<std::string> loaded;
+    for (int i = 0; i < table.rowCount(); ++i)
+        loaded.push_back(toUtf8(table.cellText(i, 0)) + "=" + toUtf8(table.cellText(i, 1)));
+    std::vector<std::string> expected;
+    for (const auto& [key, value] : window.inputFile()->infoDictionary())
+        expected.push_back(key + "=" + value);
+    CHECK(loaded == expected);
+    table.clear();
+    tab.addPredefined(0);
+    CHECK(table.row(0)[0] == gui::Value(std::wstring(L"Title")));
+    table.row(0)[1] = std::wstring(L"New title");
+    table.addRow({std::wstring(L"Author"), std::wstring()});
+    table.addRow({std::wstring(L"Custom"), std::wstring(L"Value")});
+    runTabs(window, "gui.pdf");
+    runCli({"in.pdf", "-docinfo", "Title=New title", "-docinfo", "Author=", "-docinfo", "Custom=Value",
+            "cli.pdf"});
+    CHECK_EQUAL(describe("gui.pdf"), describe("cli.pdf"));
+}
+
+// EncryptSignTab: 40-bit RC4 leaves out the permissions it cannot express, Load reads the
+// encryption of the input, and a run encrypts and signs as the command line does.
+TEST(gui_encryptSignTabLoadsAndRuns) {
+    pdfOfSizes(".", "in.pdf", {kA4});
+    runCli({"in.pdf", "-ownerpw", "owner", "-userpw", "user", "-encmode", "1", "-permissions",
+            "Printing,Copy", "locked.pdf"});
+    gui::MainWindow window(false);
+    auto& tab = window.tab<gui::EncryptSignTab>();
+    CHECK(!gui::isEnabled(tab.encryptMode()) && !gui::isEnabled(tab.keystore()));
+    CHECK_EQUAL(gui::selectedIndex(tab.encryptMode()), 1);
+    click(tab.encryptDocument());
+    click(tab.permission(5));
+    choose(tab, tab.encryptMode(), 0);
+    CHECK(!gui::isEnabled(tab.permission(5)) && !gui::isChecked(tab.permission(5)) &&
+          gui::isEnabled(tab.permission(3)));
+
+    const auto previous = gui::dialogHooks().askForPassword;
+    gui::dialogHooks().askForPassword = [](HWND) { return std::optional<std::wstring>(L"owner"); };
+    window.inputTab().addFiles({"locked.pdf"});
+    gui::dialogHooks().askForPassword = previous;
+    click(tab.encryptLoad());
+    CHECK_EQUAL(gui::selectedIndex(tab.encryptMode()), 1);
+    CHECK(gui::windowText(tab.ownerPassword()) == L"owner" &&
+          gui::windowText(tab.userPassword()) == L"user");
+    CHECK(gui::isChecked(tab.permission(0)) && gui::isChecked(tab.permission(2)) &&
+          !gui::isChecked(tab.permission(1)));
+    runTabs(window, "gui.pdf");
+    runCli({"-password", "owner", "locked.pdf", "-ownerpw", "owner", "-userpw", "user", "-encmode", "1",
+            "-permissions", "Printing,Copy", "cli.pdf"});
+    DescribeOptions locked;
+    locked.password = "owner";
+    CHECK_EQUAL(describe("gui.pdf", locked), describe("cli.pdf", locked));
+
+    click(tab.encryptDocument());
+    const fs::path keystore = pkcs12(".");
+    click(tab.signDocument());
+    gui::setWindowText(tab.keystore(), fs::absolute(keystore).wstring());
+    gui::setWindowText(tab.keyPassword(), L"secret");
+    choose(tab, tab.certLevel(), 1);
+    runTabs(window, "signed.pdf");
+    CHECK_EQUAL(verifySignature("signed.pdf"), std::string("/adbe.pkcs7.detached"));
 }

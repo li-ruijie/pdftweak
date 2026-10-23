@@ -120,9 +120,12 @@ MainWindow::MainWindow(bool visible) {
     tabs_.push_back(std::make_unique<WatermarkTab>(*this));
     tabs_.push_back(std::make_unique<ShuffleTab>(*this));
     tabs_.push_back(std::make_unique<PageNumberTab>(*this));
-    for (const wchar_t* name :
-         {L"Bookmarks", L"Attachments", L"Interaction", L"Document Info", L"Encrypt/Sign", L"Output"})
-        tabs_.push_back(std::make_unique<PlaceholderTab>(*this, name));
+    tabs_.push_back(std::make_unique<BookmarkTab>(*this));
+    tabs_.push_back(std::make_unique<AttachmentTab>(*this));
+    tabs_.push_back(std::make_unique<InteractionTab>(*this));
+    tabs_.push_back(std::make_unique<DocumentInfoTab>(*this));
+    tabs_.push_back(std::make_unique<EncryptSignTab>(*this));
+    tabs_.push_back(std::make_unique<OutputTab>(*this));
     content_ = std::make_unique<Content>(*this);
     frame_ = std::make_unique<Frame>(nullptr, programTitle(), *content_, true);
     frame_->onDialogCommand = [this](int id) {

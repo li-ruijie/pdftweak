@@ -46,7 +46,13 @@
     <ClCompile Include="main_window.cpp" />
     <ClCompile Include="preview.cpp" />
     <ClCompile Include="table_editor.cpp" />
+    <ClCompile Include="tabs\attachment_tab.cpp" />
+    <ClCompile Include="tabs\bookmark_tab.cpp" />
+    <ClCompile Include="tabs\document_info_tab.cpp" />
+    <ClCompile Include="tabs\encrypt_sign_tab.cpp" />
     <ClCompile Include="tabs\input_tab.cpp" />
+    <ClCompile Include="tabs\interaction_tab.cpp" />
+    <ClCompile Include="tabs\output_tab.cpp" />
     <ClCompile Include="tabs\page_number_tab.cpp" />
     <ClCompile Include="tabs\page_size_tab.cpp" />
     <ClCompile Include="tabs\shuffle_tab.cpp" />

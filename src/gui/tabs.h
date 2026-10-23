@@ -17,22 +17,6 @@
 
 namespace pdftweak::gui {
 
-// A tab that only names itself, as DummyTab, until its port takes its place.
-class PlaceholderTab final : public Tab {
-public:
-    PlaceholderTab(MainWindow& mainWindow, const wchar_t* name) : Tab(mainWindow), name_(name) {}
-    const wchar_t* name() const override { return name_; }
-    Operation prepare() override { return {}; }
-
-private:
-    void build() override {
-        FormLayout& layout = newLayout(L"f:p:g", L"f:p:g");
-        layout.add(label(L"Not implemented yet."), 1, 1);
-        setLayout(layout.asComponent());
-    }
-    const wchar_t* name_;
-};
-
 class InputTab final : public Tab {
 public:
     explicit InputTab(MainWindow& mainWindow) : Tab(mainWindow) {}
@@ -246,6 +230,219 @@ private:
     HWND changePageNumbers_ = nullptr;
     HWND load_ = nullptr;
     std::unique_ptr<TableEditor> pageNumberRanges_;
+};
+
+class BookmarkTab final : public Tab {
+public:
+    explicit BookmarkTab(MainWindow& mainWindow) : Tab(mainWindow) {}
+    const wchar_t* name() const override { return L"Bookmarks"; }
+    void checkRun() override;
+    Operation prepare() override;
+
+    // What Import from PDF, Import from CSV, and Export to CSV do with the file chosen.
+    void importPdf(const std::filesystem::path& file);
+    void importCsv(const std::filesystem::path& file);
+    void exportCsv(const std::filesystem::path& file);
+
+    HWND changeBookmarks() const { return changeBookmarks_; }
+    HWND load() const { return load_; }
+    HWND importPdfButton() const { return importPdf_; }
+    HWND importCsvButton() const { return importCsv_; }
+    HWND exportCsvButton() const { return exportCsv_; }
+    TableEditor& bookmarks() { return *bookmarks_; }
+
+private:
+    void build() override;
+    void updateEnabledState();
+    void appendBookmarks(const std::vector<formats::Bookmark>& bookmarks);
+    formats::Bookmark bookmark(const std::vector<Value>& row) const;
+
+    HWND changeBookmarks_ = nullptr;
+    HWND load_ = nullptr;
+    HWND importPdf_ = nullptr;
+    HWND importCsv_ = nullptr;
+    HWND exportCsv_ = nullptr;
+    std::unique_ptr<TableEditor> bookmarks_;
+};
+
+class AttachmentTab final : public Tab {
+public:
+    explicit AttachmentTab(MainWindow& mainWindow) : Tab(mainWindow) {}
+    const wchar_t* name() const override { return L"Attachments"; }
+    Operation prepare() override;
+
+    // What Add attachment... does with the file chosen.
+    void addAttachment(const std::filesystem::path& file);
+    const std::vector<std::filesystem::path>& attachments() const { return files_; }
+
+    HWND addButton() const { return add_; }
+    HWND list() const { return list_; }
+    HWND removeButton() const { return remove_; }
+
+private:
+    void build() override;
+
+    HWND add_ = nullptr;
+    HWND list_ = nullptr;
+    HWND remove_ = nullptr;
+    std::vector<std::filesystem::path> files_;
+};
+
+class InteractionTab final : public Tab {
+public:
+    explicit InteractionTab(MainWindow& mainWindow) : Tab(mainWindow) {}
+    const wchar_t* name() const override { return L"Interaction"; }
+    void checkRun() override;
+    Operation prepare() override;
+
+    HWND addTransitions() const { return addTransitions_; }
+    TableEditor& transitions() { return *transitions_; }
+    HWND addPrefs() const { return addPrefs_; }
+    HWND pageMode() const { return pageMode_; }
+    HWND pageLayout() const { return pageLayout_; }
+    HWND optionalPrefCheck(int index) const { return optionalPrefCheck_[static_cast<size_t>(index)]; }
+    HWND optionalPrefValue(int index) const { return optionalPrefValue_[static_cast<size_t>(index)]; }
+
+private:
+    void build() override;
+    void updateEnabledState();
+
+    HWND addTransitions_ = nullptr;
+    std::unique_ptr<TableEditor> transitions_;
+    HWND addPrefs_ = nullptr;
+    HWND pageMode_ = nullptr;
+    HWND pageLayout_ = nullptr;
+    std::vector<HWND> optionalPrefCheck_;
+    std::vector<HWND> optionalPrefValue_;
+};
+
+class DocumentInfoTab final : public Tab {
+public:
+    explicit DocumentInfoTab(MainWindow& mainWindow) : Tab(mainWindow) {}
+    const wchar_t* name() const override { return L"Document Info"; }
+    Operation prepare() override;
+
+    // What an item of the menu of Add predefined... does, by its index in the known info names.
+    void addPredefined(int index);
+
+    HWND infoChange() const { return infoChange_; }
+    HWND infoLoad() const { return infoLoad_; }
+    HWND infoAdd() const { return infoAdd_; }
+    TableEditor& infoEntries() { return *infoEntries_; }
+
+private:
+    void build() override;
+
+    HWND infoChange_ = nullptr;
+    HWND infoLoad_ = nullptr;
+    HWND infoAdd_ = nullptr;
+    std::unique_ptr<TableEditor> infoEntries_;
+};
+
+class EncryptSignTab final : public Tab {
+public:
+    explicit EncryptSignTab(MainWindow& mainWindow) : Tab(mainWindow) {}
+    const wchar_t* name() const override { return L"Encrypt/Sign"; }
+    Operation prepare() override;
+
+    HWND encryptDocument() const { return encryptDocument_; }
+    HWND encryptLoad() const { return encryptLoad_; }
+    HWND encryptMode() const { return encryptMode_; }
+    HWND ownerPassword() const { return ownerPassword_; }
+    HWND userPassword() const { return userPassword_; }
+    HWND noEncryptMetadata() const { return noEncryptMetadata_; }
+    HWND permission(int index) const { return permissionBoxes_[static_cast<size_t>(index)]; }
+    HWND signDocument() const { return signDocument_; }
+    HWND keystore() const { return keystore_; }
+    HWND alias() const { return alias_; }
+    HWND keyPassword() const { return keyPassword_; }
+    HWND certLevel() const { return certLevel_; }
+    HWND sigVisible() const { return sigVisible_; }
+
+private:
+    void build() override;
+    void loadEncryptionData();
+    void updateEncryptionControls();
+    void updateSignatureControls();
+
+    HWND encryptDocument_ = nullptr;
+    HWND encryptLoad_ = nullptr;
+    HWND encryptMode_ = nullptr;
+    HWND ownerPassword_ = nullptr;
+    HWND userPassword_ = nullptr;
+    HWND noEncryptMetadata_ = nullptr;
+    std::vector<HWND> permissionBoxes_;
+    HWND signDocument_ = nullptr;
+    HWND keystore_ = nullptr;
+    HWND alias_ = nullptr;
+    HWND keyPassword_ = nullptr;
+    HWND certLevel_ = nullptr;
+    HWND sigVisible_ = nullptr;
+};
+
+class OutputTab final : public Tab {
+public:
+    explicit OutputTab(MainWindow& mainWindow) : Tab(mainWindow) {}
+    const wchar_t* name() const override { return L"Output"; }
+    void checkRun() override;
+    Operation prepare() override;
+
+    // What ... does with the file chosen in the save dialog.
+    void chooseOutput(const std::filesystem::path& file);
+
+    HWND outputFile() const { return outputFile_; }
+    HWND multipageTiff() const { return multipageTiff_; }
+    HWND burst() const { return burst_; }
+    HWND fileType() const { return fileType_; }
+    HWND colorMode() const { return colorMode_; }
+    HWND compressionType() const { return compressionType_; }
+    HWND qualitySlider() const { return qualitySlider_; }
+    HWND transparent() const { return transparent_; }
+    HWND warning() const { return warning_; }
+    HWND uncompressed() const { return uncompressed_; }
+    HWND pageMarks() const { return pageMarks_; }
+    HWND tempfiles() const { return tempfiles_; }
+    HWND optimizeSize() const { return optimizeSize_; }
+    HWND fullyCompressed() const { return fullyCompressed_; }
+    // The tooltip of the warning label, empty when it shows no icon.
+    const std::wstring& warningText() const { return warningText_; }
+
+private:
+    void build() override;
+    void findSharedLibrary();
+    void clearWarning();
+    std::wstring setCorrectExtension(std::wstring filename);
+    void updateExtension();
+    void whichToEnable(int option);
+    void setOptionsEnabled(bool color, bool compression, bool quality, bool transparency, bool pdfOptions);
+    bool tiffQuality() const;
+    void colorModeChanged();
+    void compressionChanged();
+    void fileTypeChanged();
+
+    HWND outputFile_ = nullptr;
+    HWND multipageTiff_ = nullptr;
+    HWND burst_ = nullptr;
+    HWND fileType_ = nullptr;
+    HWND colorLabel_ = nullptr;
+    HWND colorMode_ = nullptr;
+    HWND compressionLabel_ = nullptr;
+    HWND compressionType_ = nullptr;
+    HWND qualityLabel_ = nullptr;
+    HWND qualitySlider_ = nullptr;
+    HWND transparent_ = nullptr;
+    HWND warning_ = nullptr;
+    HWND uncompressed_ = nullptr;
+    HWND pageMarks_ = nullptr;
+    HWND tempfiles_ = nullptr;
+    HWND optimizeSize_ = nullptr;
+    HWND fullyCompressed_ = nullptr;
+    std::wstring currentExtension_ = L".pdf";
+    std::wstring warningText_;
+    // the selections the item listeners saw last, as an ItemListener runs only on a change
+    int lastFileType_ = 0;
+    int lastColorMode_ = 0;
+    int lastCompression_ = 0;
 };
 
 } // namespace pdftweak::gui
