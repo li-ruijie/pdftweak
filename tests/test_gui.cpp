@@ -11,6 +11,7 @@
 #include "core/error.h"
 #include "core/formats/page_dimension.h"
 #include "core/formats/shuffle_rule.h"
+#include "core/formats/tables.h"
 #include "core/text.h"
 #include "gui/dialogs.h"
 #include "gui/main_window.h"
@@ -955,6 +956,41 @@ TEST(gui_encryptSignTabLoadsAndRuns) {
     choose(tab, tab.certLevel(), 1);
     runTabs(window, "signed.pdf");
     CHECK_EQUAL(verifySignature("signed.pdf"), std::string("/adbe.pkcs7.detached"));
+}
+
+// RegressionTests.gui_encryptionLoadsFromAes256AndUnencryptedMetadata: Load from document reads the
+// passwords, permissions, and metadata setting of a file with unencrypted metadata and of an AES-256
+// file. AES-256 is not in the list, so the mode stays as it was, and the file keeps only hashes of the
+// passwords, so the user password cannot be recovered.
+TEST(gui_encryptionLoadsFromAes256AndUnencryptedMetadata) {
+    pdfOfSizes(".", "in.pdf", {kA4});
+    runCli({"in.pdf", "-ownerpw", "owner", "-userpw", "user", "-encnometadata", "1", "-permissions",
+            "Copy,ScreenReaders", "nometadata.pdf"});
+    runCli({"in.pdf", "-ownerpw", "owner", "-userpw", "user", "-encmode", "3", "-permissions",
+            "Copy,ScreenReaders", "aes256.pdf"});
+    gui::MainWindow window(false);
+    auto& tab = window.tab<gui::EncryptSignTab>();
+    click(tab.encryptDocument());
+    const auto previous = gui::dialogHooks().askForPassword;
+    gui::dialogHooks().askForPassword = [](HWND) { return std::optional<std::wstring>(L"owner"); };
+    std::vector<std::string> loaded;
+    for (const char* file : {"nometadata.pdf", "aes256.pdf"}) {
+        gui::selectIndex(tab.encryptMode(), 0);
+        click(window.inputTab().clearButton());
+        window.inputTab().addFiles({file});
+        click(tab.encryptLoad());
+        std::string permissions;
+        for (size_t i = 0; i < formats::permissionNames().size(); ++i)
+            if (gui::isChecked(tab.permission(static_cast<int>(i))))
+                permissions += (permissions.empty() ? "" : ", ") + formats::permissionNames()[i];
+        loaded.push_back(std::to_string(gui::selectedIndex(tab.encryptMode())) + " " +
+                         (gui::isChecked(tab.noEncryptMetadata()) ? "true" : "false") + " " +
+                         toUtf8(gui::windowText(tab.ownerPassword())) + " " +
+                         toUtf8(gui::windowText(tab.userPassword())) + " [" + permissions + "]");
+    }
+    gui::dialogHooks().askForPassword = previous;
+    CHECK_EQUAL(loaded[0], std::string("1 true owner user [Copy, ScreenReaders]"));
+    CHECK_EQUAL(loaded[1], std::string("0 false owner  [Copy, ScreenReaders]"));
 }
 
 // Spec 9.1: a batch runs on the worker thread with the progress panel naming each file and stage,
