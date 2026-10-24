@@ -128,9 +128,9 @@ foreach ($pin in $pins.Values) {
     }
     Copy-Item $archive (Join-Path $dist 'sources')
 }
-# The tar of the commit's tree, with LF line endings, the modes 0644 and 0755, and the commit time on
-# every entry, is copied into a ustar archive without owner names, as git names the owner root. The
-# same commit gives the same bytes.
+# The tar of the commit's tree, with the line endings as committed, the modes 0644 and 0755, and the
+# commit time on every entry, is copied into a ustar archive without owner names, as git names the
+# owner root. The same commit gives the same bytes.
 $commitTime = [DateTimeOffset]::FromUnixTimeSeconds([long](git -C $repo log -1 --format=%ct HEAD))
 $plainTar = Join-Path $dist 'sources\pdftweak-src.tar'
 git -C $repo -c tar.umask=022 -c core.autocrlf=false archive --format=tar --prefix="pdftweak-$version/" `
