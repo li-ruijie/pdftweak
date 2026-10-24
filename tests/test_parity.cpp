@@ -159,7 +159,26 @@ Outcome runPort(const std::vector<std::string>& args) {
     return outcome;
 }
 
+// The jar's version from "JPDF Tweak x.y.z", as a number x * 10000 + y * 100 + z.
+int javaVersion() {
+    static int version = -1;
+    if (version >= 0)
+        return version;
+    const ProcessResult result = runProcess(
+        javaExecutable(),
+        commandLine({"-jar", pdftweak::toUtf8((javaFolder() / "jpdftweak.jar").wstring()), "-version"}));
+    int a = 0, b = 0, c = 0;
+    const size_t at = result.out.find("Tweak ");
+    if (at == std::string::npos || sscanf_s(result.out.c_str() + at + 6, "%d.%d.%d", &a, &b, &c) < 2)
+        throw Failure("Cannot read the jar's version from: " + result.out);
+    version = a * 10000 + b * 100 + c;
+    return version;
+}
+
 Outcome runJava(const std::vector<std::string>& args) {
+    // the port's baseline is jPDF Tweak 1.3.2, whose fixes older jars lack
+    if (javaVersion() < 10302)
+        throw Failure("The parity tests need jpdftweak.jar 1.3.2 or later.");
     std::vector<std::string> full = {"-jar", pdftweak::toUtf8((javaFolder() / "jpdftweak.jar").wstring())};
     const std::vector<std::string> rest = expand(args, "java");
     full.insert(full.end(), rest.begin(), rest.end());
@@ -205,23 +224,6 @@ void requireSuccess(const Runs& runs) {
         fail(__FILE__, __LINE__, "the port failed: " + runs.port.err);
     if (!runs.java.ok)
         fail(__FILE__, __LINE__, "Java failed: " + runs.java.err);
-}
-
-// The jar's version from "JPDF Tweak x.y.z", as a number x * 10000 + y * 100 + z.
-int javaVersion() {
-    static int version = -1;
-    if (version >= 0)
-        return version;
-    const Outcome outcome{};
-    const ProcessResult result = runProcess(
-        javaExecutable(),
-        commandLine({"-jar", pdftweak::toUtf8((javaFolder() / "jpdftweak.jar").wstring()), "-version"}));
-    int a = 0, b = 0, c = 0;
-    const size_t at = result.out.find("Tweak ");
-    if (at == std::string::npos || sscanf_s(result.out.c_str() + at + 6, "%d.%d.%d", &a, &b, &c) < 2)
-        throw Failure("Cannot read the jar's version from: " + result.out);
-    version = a * 10000 + b * 100 + c;
-    return version;
 }
 
 // The pages rendered at 72 dpi agree within 2 per channel on 99.5 % of the pixels. Pages listed in
@@ -595,12 +597,8 @@ TEST(parity_outputFlags) {
         fs::remove("port.pdf");
         fs::remove("java.pdf");
     }
-    // jPDF Tweak 1.3.1 ignored u when an option block existed, which 1.3.2 fixes (decision 18)
-    if (javaVersion() >= 10302) {
-        comparePdf({"in.pdf", "-preserveLinks", "On", "-ou", "{o}.pdf"});
-        fs::remove("port.pdf");
-        fs::remove("java.pdf");
-    }
+    // u with an option block, which jPDF Tweak 1.3.1 ignored
+    comparePdf({"in.pdf", "-preserveLinks", "On", "-ou", "{o}.pdf"});
 }
 
 TEST(parity_outputNames) {
