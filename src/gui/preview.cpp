@@ -1,6 +1,7 @@
 #include "gui/preview.h"
 
 #include "core/text.h"
+#include "gui/window.h"
 
 #include <algorithm>
 #include <cmath>
@@ -62,7 +63,13 @@ LRESULT CALLBACK Preview::proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
             const HBITMAP bitmap =
                 CreateCompatibleBitmap(dc, std::max(1L, client.right), std::max(1L, client.bottom));
             const HGDIOBJ old = SelectObject(memory, bitmap);
-            preview->paint(memory);
+            guardedProc(
+                hwnd,
+                [&] {
+                    preview->paint(memory);
+                    return LRESULT{0};
+                },
+                [] { return LRESULT{0}; });
             BitBlt(dc, 0, 0, client.right, client.bottom, memory, 0, 0, SRCCOPY);
             SelectObject(memory, old);
             DeleteObject(bitmap);

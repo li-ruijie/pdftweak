@@ -1,5 +1,6 @@
 #include "gui/dialogs.h"
 
+#include "core/text.h"
 #include "core/version.h"
 #include "gui/window.h"
 
@@ -186,5 +187,12 @@ bool confirmOverwrite(HWND owner) {
 }
 
 std::wstring programTitle() { return L"" PDFTWEAK_PROGRAM_NAME " " PDFTWEAK_VERSION_STRING; }
+
+void showUnexpectedError(HWND owner, const char* message) {
+    const std::wstring text = message != nullptr && *message != '\0' ? fromUtf8(message) : L"No message";
+    messageBox(owner, text + L"\n\n" PDFTWEAK_PROGRAM_NAME " version: " PDFTWEAK_VERSION_STRING,
+               L"An unexpected error occurred while running " PDFTWEAK_PROGRAM_NAME ".",
+               MB_OK | MB_ICONERROR);
+}
 
 } // namespace pdftweak::gui

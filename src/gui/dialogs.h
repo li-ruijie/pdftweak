@@ -48,4 +48,9 @@ bool confirmOverwrite(HWND owner);
 // The program name and version, as the window title and message boxes show them.
 std::wstring programTitle();
 
+// Main's uncaught-exception handler: the error box for a failure that no handler expected, with the
+// message of the failure, or none, and the version. Java's box also asked for a report at the
+// project's tracker, which the port does not have.
+void showUnexpectedError(HWND owner, const char* message);
+
 } // namespace pdftweak::gui

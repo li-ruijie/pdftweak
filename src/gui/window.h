@@ -4,10 +4,12 @@
 // state of controls, and Page, a child window whose controls a FormLayout places and whose control
 // notifications go to handlers registered with the controls.
 
+#include "gui/dialogs.h"
 #include "gui/form_layout.h"
 
 #include <windows.h>
 
+#include <exception>
 #include <functional>
 #include <map>
 #include <memory>
@@ -165,5 +167,21 @@ private:
 // Gives a message to the frame it belongs to, for the keyboard of dialogs. Returns whether a frame
 // used it, so that the message loop skips TranslateMessage and DispatchMessage.
 bool translateFrameMessage(MSG& msg);
+
+// The body of a window procedure, which lets no exception out: one cannot pass back through the
+// system's call into the procedure. A failure that no handler caught shows the box for an unexpected
+// error, as Java's uncaught-exception handler did, and the procedure answers as fallback does, so
+// that the window goes on.
+template <typename Body, typename Fallback>
+LRESULT guardedProc(HWND hwnd, Body&& body, Fallback&& fallback) {
+    try {
+        return body();
+    } catch (const std::exception& error) {
+        showUnexpectedError(hwnd, error.what());
+    } catch (...) {
+        showUnexpectedError(hwnd, nullptr);
+    }
+    return fallback();
+}
 
 } // namespace pdftweak::gui

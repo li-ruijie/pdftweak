@@ -25,6 +25,7 @@
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -999,4 +1000,40 @@ TEST(gui_cancelStopsTheRunAndKeepsFinishedFiles) {
     waitForRun(window);
     CHECK(fs::exists("a-out.pdf") && !fs::exists("b-out.pdf"));
     CHECK(messages.seen == std::vector<std::string>{"PDF Tweak: Cancelled after 1 of 2 files"});
+}
+
+namespace {
+
+// A page with one button whose handler fails as no handler expects.
+struct FailingHost final : gui::Page {
+    HWND failing = nullptr;
+    int clicks = 0;
+
+private:
+    void build() override {
+        gui::FormLayout& layout = newLayout(L"f:p", L"f:p");
+        failing = button(L"Fail", [this] {
+            ++clicks;
+            throw std::out_of_range("invalid vector subscript");
+        });
+        layout.add(failing, 1, 1);
+        setLayout(layout.asComponent());
+    }
+};
+
+} // namespace
+
+// Main's uncaught-exception handler: a failure that no handler catches shows the box for an unexpected
+// error with its message and the version, and the window goes on, as Java's event thread did. The
+// port has no tracker, so the box asks for no report.
+TEST(gui_unexpectedFailureShowsAnErrorBoxAndTheWindowGoesOn) {
+    Messages messages;
+    FailingHost host;
+    gui::Frame frame(nullptr, L"Fail", host, true);
+    click(host.failing);
+    click(host.failing);
+    CHECK_EQUAL(host.clicks, 2);
+    CHECK_EQUAL(messages.seen.size(), size_t{2});
+    CHECK_EQUAL(messages.seen.back(), std::string("An unexpected error occurred while running PDF Tweak.: "
+                                                  "invalid vector subscript\n\nPDF Tweak version: 2.0.0"));
 }

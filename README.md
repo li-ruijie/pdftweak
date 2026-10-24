@@ -95,3 +95,6 @@ folder holds the licence or notice of each, and its `sources` folder holds the s
   Cancel button, where Java's window stopped responding until the run ended
 - Package the program as a folder with the C++ runtime, the licences of every linked library, and
   the sources of the libraries and of PDF Tweak
+- Show a failure that no part of the window expected in an error box with its message and the
+  version, and keep the window open, where Java's report window also named its tracker and showed
+  the stack trace

@@ -601,74 +601,84 @@ LRESULT TableEditor::customDraw(NMLVCUSTOMDRAW* draw) {
 LRESULT CALLBACK TableEditor::listProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR,
                                        DWORD_PTR data) {
     auto* table = reinterpret_cast<TableEditor*>(data);
-    switch (msg) {
-    case WM_GETDLGCODE:
-        // Enter moves to the next row, as in JTable, instead of pressing the default button
-        if (lParam != 0 && reinterpret_cast<MSG*>(lParam)->message == WM_KEYDOWN &&
-            reinterpret_cast<MSG*>(lParam)->wParam == VK_RETURN)
-            return DLGC_WANTALLKEYS;
-        break;
-    case WM_KEYDOWN: {
-        const int row = ListView_GetNextItem(hwnd, -1, LVNI_FOCUSED);
-        const int columns = static_cast<int>(table->columns_.size());
-        switch (wParam) {
-        case VK_F2:
-            if (row >= 0)
-                table->startEditing(row, table->currentColumn_);
-            return 0;
-        case VK_LEFT:
-        case VK_RIGHT:
-            table->setCurrent(
-                row, std::clamp(table->currentColumn_ + (wParam == VK_LEFT ? -1 : 1), 0, columns - 1));
-            return 0;
-        case VK_SPACE:
-            if (row >= 0 &&
-                table->columns_[static_cast<size_t>(table->currentColumn_)].type == ColumnType::Boolean)
-                table->toggle(row, table->currentColumn_);
-            return 0;
-        case VK_RETURN: table->moveSelection(1); return 0;
-        }
-        break;
-    }
-    case WM_CHAR: {
-        const int row = ListView_GetNextItem(hwnd, -1, LVNI_FOCUSED);
-        if (wParam < 32 || row < 0)
-            break;
-        const ColumnType type = table->columns_[static_cast<size_t>(table->currentColumn_)].type;
-        if (type == ColumnType::Boolean)
-            return 0;
-        // typing starts editing the current cell, and the key goes to the editor, as in JTable
-        const HWND editor = table->startEditing(row, table->currentColumn_);
-        if (editor != nullptr && isTextLike(type))
-            SendMessageW(editor, WM_CHAR, wParam, lParam);
-        return 0;
-    }
-    case WM_NCDESTROY: RemoveWindowSubclass(hwnd, listProc, 1); break;
-    }
-    return DefSubclassProc(hwnd, msg, wParam, lParam);
+    return guardedProc(
+        hwnd,
+        [&]() -> LRESULT {
+            switch (msg) {
+            case WM_GETDLGCODE:
+                // Enter moves to the next row, as in JTable, instead of pressing the default button
+                if (lParam != 0 && reinterpret_cast<MSG*>(lParam)->message == WM_KEYDOWN &&
+                    reinterpret_cast<MSG*>(lParam)->wParam == VK_RETURN)
+                    return DLGC_WANTALLKEYS;
+                break;
+            case WM_KEYDOWN: {
+                const int row = ListView_GetNextItem(hwnd, -1, LVNI_FOCUSED);
+                const int columns = static_cast<int>(table->columns_.size());
+                switch (wParam) {
+                case VK_F2:
+                    if (row >= 0)
+                        table->startEditing(row, table->currentColumn_);
+                    return 0;
+                case VK_LEFT:
+                case VK_RIGHT:
+                    table->setCurrent(row, std::clamp(table->currentColumn_ + (wParam == VK_LEFT ? -1 : 1),
+                                                      0, columns - 1));
+                    return 0;
+                case VK_SPACE:
+                    if (row >= 0 && table->columns_[static_cast<size_t>(table->currentColumn_)].type ==
+                                        ColumnType::Boolean)
+                        table->toggle(row, table->currentColumn_);
+                    return 0;
+                case VK_RETURN: table->moveSelection(1); return 0;
+                }
+                break;
+            }
+            case WM_CHAR: {
+                const int row = ListView_GetNextItem(hwnd, -1, LVNI_FOCUSED);
+                if (wParam < 32 || row < 0)
+                    break;
+                const ColumnType type = table->columns_[static_cast<size_t>(table->currentColumn_)].type;
+                if (type == ColumnType::Boolean)
+                    return 0;
+                // typing starts editing the current cell, and the key goes to the editor, as in JTable
+                const HWND editor = table->startEditing(row, table->currentColumn_);
+                if (editor != nullptr && isTextLike(type))
+                    SendMessageW(editor, WM_CHAR, wParam, lParam);
+                return 0;
+            }
+            case WM_NCDESTROY: RemoveWindowSubclass(hwnd, listProc, 1); break;
+            }
+            return DefSubclassProc(hwnd, msg, wParam, lParam);
+        },
+        [&] { return DefSubclassProc(hwnd, msg, wParam, lParam); });
 }
 
 LRESULT CALLBACK TableEditor::editorProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR,
                                          DWORD_PTR data) {
     auto* table = reinterpret_cast<TableEditor*>(data);
-    switch (msg) {
-    case WM_GETDLGCODE: return DLGC_WANTALLKEYS | DefSubclassProc(hwnd, msg, wParam, lParam);
-    case WM_KEYDOWN:
-        if (wParam == VK_RETURN || wParam == VK_ESCAPE || wParam == VK_TAB) {
-            // a drop-down list that is open takes Enter and Escape itself
-            if (wParam != VK_TAB && SendMessageW(hwnd, CB_GETDROPPEDSTATE, 0, 0) != 0)
+    return guardedProc(
+        hwnd,
+        [&]() -> LRESULT {
+            switch (msg) {
+            case WM_GETDLGCODE: return DLGC_WANTALLKEYS | DefSubclassProc(hwnd, msg, wParam, lParam);
+            case WM_KEYDOWN:
+                if (wParam == VK_RETURN || wParam == VK_ESCAPE || wParam == VK_TAB) {
+                    // a drop-down list that is open takes Enter and Escape itself
+                    if (wParam != VK_TAB && SendMessageW(hwnd, CB_GETDROPPEDSTATE, 0, 0) != 0)
+                        break;
+                    PostMessageW(table->handle(), kEditorKey, wParam, reinterpret_cast<LPARAM>(hwnd));
+                    return 0;
+                }
                 break;
-            PostMessageW(table->handle(), kEditorKey, wParam, reinterpret_cast<LPARAM>(hwnd));
-            return 0;
-        }
-        break;
-    case WM_CHAR:
-        if (wParam == L'\r' || wParam == 27 || wParam == L'\t')
-            return 0;
-        break;
-    case WM_NCDESTROY: RemoveWindowSubclass(hwnd, editorProc, 2); break;
-    }
-    return DefSubclassProc(hwnd, msg, wParam, lParam);
+            case WM_CHAR:
+                if (wParam == L'\r' || wParam == 27 || wParam == L'\t')
+                    return 0;
+                break;
+            case WM_NCDESTROY: RemoveWindowSubclass(hwnd, editorProc, 2); break;
+            }
+            return DefSubclassProc(hwnd, msg, wParam, lParam);
+        },
+        [&] { return DefSubclassProc(hwnd, msg, wParam, lParam); });
 }
 
 } // namespace pdftweak::gui

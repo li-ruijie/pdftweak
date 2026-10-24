@@ -330,7 +330,9 @@ LRESULT CALLBACK Page::proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     auto* page = reinterpret_cast<Page*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     if (page == nullptr)
         return DefWindowProcW(hwnd, msg, wParam, lParam);
-    return page->handle(msg, wParam, lParam);
+    return guardedProc(
+        hwnd, [&] { return page->handle(msg, wParam, lParam); },
+        [&] { return DefWindowProcW(hwnd, msg, wParam, lParam); });
 }
 
 LRESULT Page::handle(UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -509,7 +511,9 @@ LRESULT CALLBACK Frame::proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     auto* frame = reinterpret_cast<Frame*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     if (frame == nullptr)
         return DefWindowProcW(hwnd, msg, wParam, lParam);
-    return frame->handle(msg, wParam, lParam);
+    return guardedProc(
+        hwnd, [&] { return frame->handle(msg, wParam, lParam); },
+        [&] { return DefWindowProcW(hwnd, msg, wParam, lParam); });
 }
 
 LRESULT Frame::handle(UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -567,7 +571,8 @@ bool translateFrameMessage(MSG& msg) {
     if (wcscmp(name, kFrameClass) != 0)
         return false;
     auto* frame = reinterpret_cast<Frame*>(GetWindowLongPtrW(root, GWLP_USERDATA));
-    if (frame != nullptr && msg.message == WM_KEYDOWN && frame->onKey && frame->onKey(msg))
+    if (frame != nullptr && msg.message == WM_KEYDOWN && frame->onKey &&
+        guardedProc(root, [&]() -> LRESULT { return frame->onKey(msg); }, [] { return LRESULT{TRUE}; }))
         return true;
     return IsDialogMessageW(root, &msg) != FALSE;
 }
