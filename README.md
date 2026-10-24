@@ -6,8 +6,16 @@ encrypts and signs documents, bursts them into single pages, and exports pages a
 port of jPDF Tweak 1.3.2 with a native Windows interface, and it keeps jPDF Tweak's command-line
 syntax and file formats.
 
-This version is under development. The command line and the window are ported, and milestone 4
-packages them.
+This version is under development. The command line and the window are ported, and the program
+ships as a folder that runs without an installer.
+
+## Installing
+
+The folder `pdftweak-2.0.0` runs on 64-bit Windows 10 version 1703 or later. Copy it anywhere and
+run `pdftweak.exe` from it, or add it to PATH to run `pdftweak` in a console. It holds the program,
+the DLLs it needs with the C++ runtime, the licences of the libraries it links under `licences`, and
+the sources of those libraries and of PDF Tweak under `sources`. Deleting the folder removes the
+program.
 
 ## Using the window
 
@@ -33,11 +41,13 @@ component, PowerShell 7, and optionally NASM for faster JPEG code.
 pwsh deps\deps.ps1
 msbuild pdftweak.sln -p:Configuration=Release -p:Platform=x64
 build\x64\Release\pdftweak-tests.exe unit main gui
+pwsh tools\package.ps1
 ```
 
 `deps\deps.ps1` downloads the sources of MuPDF, qpdf, libtiff, zlib, and libjpeg-turbo, checks each
 against the SHA-256 in `deps\pins.psd1`, and builds them. Debug and Release together take 30 to 40
-minutes, mostly for MuPDF.
+minutes, mostly for MuPDF. `tools\package.ps1` makes the folder `dist\pdftweak-2.0.0` from the
+Release build and checks that it runs with a PATH of the Windows folders only.
 
 ## Licence
 
@@ -79,3 +89,5 @@ LICENSE.
 - Port the window with its eleven tabs, the six tables, and the shuffle preview. A run works on a
   separate thread and shows its file, tab, stage, and progress, also on the taskbar button, with a
   Cancel button, where Java's window stopped responding until the run ended
+- Package the program as a folder with the C++ runtime, the licences of every linked library, and
+  the sources of the libraries and of PDF Tweak
