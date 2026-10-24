@@ -1,0 +1,62 @@
+# Publishes a GitHub release for a tag v<major>.<minor>.<patch>, with the distributable folder that
+# the build workflow makes as pdftweak-<version>-win-x64.zip. Every action is pinned to a full commit
+# SHA, with the version tag in a trailing comment for Dependabot.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Deny everything at the top. Each job grants only what it needs.
+permissions: {}
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject tags outside the release pattern
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! printf '%s\n' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+[a-z]?$'; then
+            echo "::error::Tag '$TAG' does not match ^v[0-9]+\.[0-9]+\.[0-9]+[a-z]?$"
+            exit 1
+          fi
+
+  build:
+    needs: check-release
+    permissions:
+      contents: read
+    uses: ./.github/workflows/build.yml
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download the distributable folder
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: pdftweak-win-x64
+          path: dist
+
+      # The folder carries the version of src/core/version.h, which must be the tag's.
+      - name: Zip the folder of the tagged version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          if [ ! -d "dist/pdftweak-$version" ]; then
+            echo "::error::The build made $(ls dist), not pdftweak-$version"
+            exit 1
+          fi
+          cd dist
+          zip -r -X -q "pdftweak-$version-win-x64.zip" "pdftweak-$version"
+
+      - name: Publish the GitHub release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          files: dist/*.zip
+          generate_release_notes: true

@@ -1,0 +1,71 @@
+# Builds the Release configuration with Visual Studio 2026, runs the unit, main, and gui test groups,
+# and uploads the distributable folder that tools/package.ps1 makes as the artifact pdftweak-win-x64.
+# The release workflow calls it for a tag. Every action is pinned to a full commit SHA, with the
+# version tag in a trailing comment for Dependabot.
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+# Deny everything at the top. Each job grants only what it needs.
+permissions: {}
+
+jobs:
+  build:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # deps.ps1 takes 20 to 40 minutes, mostly for MuPDF, so its sources and Release libraries are
+      # kept until the pins or the scripts change.
+      - name: Restore the native libraries
+        id: deps
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            deps/src
+            deps/out/Release
+          key: deps-release-${{ hashFiles('deps/pins.psd1', 'deps/deps.ps1', 'deps/deps.props') }}
+
+      - name: Build the native libraries
+        if: steps.deps.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: ./deps/deps.ps1 -Configuration Release
+
+      - name: Build the solution
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+          $vs = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+          & (Join-Path $vs 'MSBuild/Current/Bin/MSBuild.exe') pdftweak.sln -p:Configuration=Release `
+              -p:Platform=x64 -m -nologo -v:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # The parity group needs jPDF Tweak and Java, so it runs only where PDFTWEAK_JAVA_REPO is set.
+      - name: Run the tests
+        shell: pwsh
+        run: |
+          ./build/x64/Release/pdftweak-tests.exe unit main gui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Make the distributable folder
+        shell: pwsh
+        run: ./tools/package.ps1
+
+      - name: Upload the distributable folder
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pdftweak-win-x64
+          path: dist/
+          if-no-files-found: error

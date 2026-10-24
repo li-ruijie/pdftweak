@@ -1,0 +1,9 @@
+# Copy to .github/dependabot.yml. Keeps every SHA-pinned action current with one
+# pull request per action, checked weekly. Add a block per further ecosystem
+# (pip, npm) when the repository has one.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

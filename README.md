@@ -49,6 +49,13 @@ against the SHA-256 in `deps\pins.psd1`, and builds them. Debug and Release toge
 minutes, mostly for MuPDF. `tools\package.ps1` makes the folder `dist\pdftweak-2.0.0` from the
 Release build and checks that it runs with a PATH of the Windows folders only.
 
+The `parity` test group runs each case through jPDF Tweak as well. It needs Java and runs when the
+variable `PDFTWEAK_JAVA_REPO` names a jPDF Tweak repository with its built `jpdftweak.jar` 1.3.2.
+
+GitHub Actions runs these steps for the Release configuration on every push to `main`, with the
+folder as the artifact `pdftweak-win-x64`, and publishes the folder as a release for a tag such as
+`v2.0.0`.
+
 ## Licence
 
 PDF Tweak is free software under the GNU Affero General Public License, version 3 or later. See
