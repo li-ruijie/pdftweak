@@ -3,7 +3,7 @@
 PDF Tweak crops, rotates, scales, shuffles (n-up and booklets), watermarks, numbers, and bookmarks the
 pages of PDF files, edits page labels, attachments, viewer preferences, and document information,
 encrypts and signs documents, bursts them into single pages, and exports pages as images. It is a C++
-port of jPDF Tweak 1.3.1 with a native Windows interface, and it keeps jPDF Tweak's command-line
+port of jPDF Tweak 1.3.2 with a native Windows interface, and it keeps jPDF Tweak's command-line
 syntax and file formats.
 
 This version is under development. The command line and the window are ported, and milestone 4
@@ -68,8 +68,6 @@ LICENSE.
   target, and links with null coordinates no longer fail
 - Port the background, text watermark, page numbers, page labels, bookmarks, attachments, page
   transitions, and viewer preferences
-- Write every stream of the document uncompressed with the `u` output flag, where Java left the
-  streams it copied from the input compressed
 - Port the export of pages as JPG, PNG, GIF, PAM, PNM, BMP, and TIFF images, and the multipage TIFF.
   GIF and BMP files come from the Windows Imaging Component, whose GIF palette for a colour page can
   differ from the one Java's ImageIO chose
@@ -78,13 +76,6 @@ LICENSE.
   keystores, and a Java keystore is refused with the keytool command that converts it. The visible
   signature shows MuPDF's appearance, and the CMS signature carries a signing time
 - Sign an encrypted output in the same run, where Java refused to sign and encrypt together
-- Show in an error box the failures that Java's window left unreported, with the message of the
-  error or a plain one where Java had none: a run with an empty cell, an unknown transition, or a
-  page before the first in the transitions table, and a bookmark CSV file that does not import or
-  export. A failed export writes no file, where Java left an empty one
 - Port the window with its eleven tabs, the six tables, and the shuffle preview. A run works on a
   separate thread and shows its file, tab, stage, and progress, also on the taskbar button, with a
   Cancel button, where Java's window stopped responding until the run ended
-- Load the encryption of a file with unencrypted metadata or 256-bit AES in the Encrypt/Sign tab,
-  selecting its mode when the list offers it, where Java stopped before the passwords and
-  permissions
