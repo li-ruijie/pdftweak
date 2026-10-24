@@ -123,6 +123,7 @@ Operation InteractionTab::prepare() {
         if (transitions) {
             for (Transition t : *transitions) {
                 const int pages = tweak.pageCount();
+                const int typed = t.from;
                 if (t.from < 0)
                     t.from += pages + 1;
                 if (t.to < 0)
@@ -132,9 +133,10 @@ Operation InteractionTab::prepare() {
                 if (t.to > pages)
                     t.to = pages;
                 for (int j = t.from; j <= t.to; ++j) {
-                    // a page before the first, where Java's setTransition indexed outside its array
+                    // a page before the first, where Java's setTransition indexed outside its array, named
+                    // as the First Page cell gives it
                     if (j < 1)
-                        throw Error(Error::Kind::Io, "Page " + std::to_string(j) + " does not exist.");
+                        throw Error(Error::Kind::Io, "Page " + std::to_string(typed) + " does not exist.");
                     tweak.setTransition(j, t.type, t.duration, t.pageDuration);
                 }
             }

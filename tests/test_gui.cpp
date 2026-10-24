@@ -875,7 +875,7 @@ TEST(gui_interactionTabRunMatchesTheCommandLine) {
                 std::string("Please fill in every cell of the transitions table."));
     table.row(0)[3] = 3;
     table.row(0)[0] = -5;
-    CHECK_EQUAL(runError(window, "bad.pdf"), std::string("Page -1 does not exist."));
+    CHECK_EQUAL(runError(window, "bad.pdf"), std::string("Page -5 does not exist."));
 }
 
 // DocumentInfoTab: Load lists the input's information, Add predefined adds a known name, and a run
