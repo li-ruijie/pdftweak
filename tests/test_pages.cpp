@@ -1,5 +1,5 @@
 // Ports of the page operation tests of OperationTests.java and RegressionTests.java, including the
-// tests of jPDF Tweak 1.3.0 for links and the catalog entries that rebuilt pages keep (decision 16).
+// tests of jPDF Tweak 1.3.0 for links and the catalog entries that rebuilt pages keep.
 
 #include "runner.h"
 

@@ -103,7 +103,7 @@ std::wstring PdfToImage::imageFileName(const std::wstring& base, const std::wstr
 
 void PdfToImage::checkTiffOptions() const {
     // The JDK's TIFF writer cannot JPEG-compress an image with an alpha channel, which only RGB
-    // images have, so Java refused that before any file was written (decision 3).
+    // images have, so Java refused that before any file was written.
     if (compression_ == TiffCompression::JPEG && transparent_ && colorMode_ == ColorMode::RGB)
         throw Error(Error::Kind::Io,
                     "TIFF JPEG compression cannot keep transparency. Turn transparency off "

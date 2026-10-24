@@ -271,7 +271,7 @@ TEST(unit_pageLabelStrings) {
     CHECK_EQUAL(join(labelStrings({parsePageLabel("1=Appendix:100-")}, 2)),
                 std::string("[Appendix, Appendix]"));
     CHECK_EQUAL(parsePageLabel("20=Chapter:with:colon:1I").prefix, std::string("Chapter:with:colon"));
-    // ISO 32000 letters continue after Z with AA, BB, and so on (decision 1)
+    // ISO 32000 letters continue after Z with AA, BB, and so on, where iText wrote AA, AB
     CHECK_EQUAL(labelNumber(LabelStyle::UpperLetters, 26), std::string("Z"));
     CHECK_EQUAL(labelNumber(LabelStyle::UpperLetters, 27), std::string("AA"));
     CHECK_EQUAL(labelNumber(LabelStyle::LowerLetters, 28), std::string("bb"));

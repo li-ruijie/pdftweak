@@ -1,4 +1,4 @@
-// Ports of the signing tests of OperationTests.java, and the key sources of spec section 7.
+// Ports of the signing tests of OperationTests.java, and tests of the key sources the port adds.
 
 #include "runner.h"
 
@@ -131,8 +131,8 @@ TEST(main_signatureCoversTheFileAndVerifies) {
         CHECK(widget.getKey("/FT").isNameAndEquals("/Sig"));
         CHECK_EQUAL(widget.getKey("/Rect").unparse(), std::string("[ 100 100 200 200 ]"));
     }
-    // Java refused to sign and encrypt in one run. The port signs the encrypted file (decision 5 and
-    // its ChangeLog line), and the signature survives both passwords.
+    // Java refused to sign and encrypt in one run. The port signs the encrypted file, a difference
+    // that the README ChangeLog records, and the signature survives both passwords.
     runCli(
         {in, "-keystore", keystore, "-sign", "secret", "-ownerpw", "owner", "-userpw", "user", "both.pdf"});
     CHECK_EQUAL(verifySignature("both.pdf", "owner"), std::string("/adbe.pkcs7.detached"));

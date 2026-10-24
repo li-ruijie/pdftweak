@@ -83,7 +83,9 @@ void Tweak::configureWriter(QPDFWriter& writer, bool uncompressed, bool fullyCom
         writer.setObjectStreamMode(qpdf_o_generate);
     if (encryptionMode_ == -1)
         return;
-    // spec section 5.1 and decision 4
+    // The modes of PdfWriter.setEncryption: 0 is 40-bit RC4 (revision 2), 1 is 128-bit RC4 (revision
+    // 3, or 4 with unencrypted metadata), 2 is 128-bit AES (revision 4), and 3 is 256-bit AES
+    // (revision 5). Bit 8 leaves the metadata unencrypted. The bits of /P become qpdf's permissions.
     const int p = encryptionPermissions_;
     const int base = encryptionMode_ & 7;
     const bool encryptMetadata = (encryptionMode_ & 8) == 0;
@@ -112,7 +114,7 @@ void Tweak::configureWriter(QPDFWriter& writer, bool uncompressed, bool fullyCom
 }
 
 void Tweak::finishInformation(QPDF& pdf) const {
-    // decision 10: ModDate becomes now, Producer stays or is supplied, and existing XMP properties
+    // ModDate becomes now, Producer stays or is supplied, and existing XMP properties
     // follow
     const std::string date = pdfDateNow();
     QPDFObjectHandle info = pdf.getTrailer().getKey("/Info");
@@ -246,7 +248,7 @@ void Tweak::writeOutput(std::string outputFile, bool multipageTiff, bool burst, 
             applyOutputSettings(*current_);
             finishInformation(*current_);
             if (signingKey_) {
-                // spec section 7: qpdf writes a temporary file, MuPDF appends the signature to it, and
+                // qpdf writes a temporary file, MuPDF appends the signature to it, and
                 // the signed file becomes the output
                 createForWriting(name, toUtf8(name));
                 const std::filesystem::path temp = temporaryFile();

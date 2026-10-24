@@ -2,7 +2,7 @@
 
 // The PdfWriter route of PdfTweak: a new document whose pages draw pages of the current document
 // as Form XObjects (iText's PdfImportedPage), and PageRemap, which carries over the catalog entries,
-// destinations, and links that point at those pages (decision 16).
+// destinations, and links that point at those pages.
 
 #include "core/pdf/qpdf_util.h"
 

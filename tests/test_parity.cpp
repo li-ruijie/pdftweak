@@ -1,9 +1,8 @@
-// The parity group (plan section 2.8): each test runs one command line through pdftweak.com and
-// through jPDF Tweak's jar, and compares the results by meaning. The jar, its libraries, and MuPDF's
-// JNI library are copied once from the Java repository (PDFTWEAK_JAVA_REPO, by default
-// C:\src\jpdftweak) into build\parity-java, so that a rebuild
-// there does not change a run here. Both programs run in the test's folder, and "{o}" in an argument
-// stands for "port" in the port's run and "java" in Java's.
+// The parity group: each test runs one command line through pdftweak.com and through jPDF Tweak's jar, and
+// compares the results by meaning. The jar, its libraries, and MuPDF's JNI library are copied once from the
+// Java repository that PDFTWEAK_JAVA_REPO names into build\parity-java, so that a rebuild there does not
+// change a run here. Both programs run in the test's folder, and "{o}" in an argument stands for "port" in
+// the port's run and "java" in Java's.
 //
 // A document is compared through describe(), which lists the pages (boxes, rotation, text,
 // annotations, and transitions) and the catalog (page labels, bookmarks, viewer settings,
@@ -73,9 +72,9 @@ const fs::path& javaFolder() {
         return folder;
     wchar_t* configured = nullptr;
     size_t size = 0;
-    fs::path repo = L"C:\\src\\jpdftweak";
-    if (_wdupenv_s(&configured, &size, L"PDFTWEAK_JAVA_REPO") == 0 && configured != nullptr)
-        repo = configured;
+    if (_wdupenv_s(&configured, &size, L"PDFTWEAK_JAVA_REPO") != 0 || configured == nullptr)
+        throw Skipped("PDFTWEAK_JAVA_REPO does not name the jPDF Tweak repository");
+    const fs::path repo = configured;
     free(configured);
     const fs::path target = binaryFolder().parent_path().parent_path() / "parity-java";
     fs::remove_all(target);
@@ -721,7 +720,7 @@ TEST(parity_infoOutputs) {
     document();
     runBoth({"in.pdf", "-bookmark", "1;O;Part;1 Fit", "-bookmark", "2;BI;Chapter;2 XYZ 0 800 0",
              "-pagenumbers", "1=Intro:1i", "{o}-marked.pdf"});
-    // decision 10: the Producer that -info reports carries each program's own note
+    // the Producer that -info reports carries each program's own note
     for (const std::string option : {"-info", "-moreinfo", "-savebookmarks"}) {
         const Runs runs = runBoth({"port-marked.pdf", option, "{o}-" + option.substr(1) + ".txt"});
         CHECK(runs.port.ok && runs.java.ok);
@@ -736,7 +735,7 @@ TEST(parity_errors) {
     compareFailure({"in.pdf", "-bookmark", "not a bookmark", "{o}.pdf"});
     compareFailure({"in.pdf", "-pagenumbers", "x", "{o}.pdf"});
     compareFailure({"in.pdf", "-oi", "{o}*.tiff"});
-    // decision 14: refusals that Java printed and returned from, which the port reports with exit
+    // refusals that Java printed and returned from, which the port reports with exit
     // code 1
     for (const std::vector<std::string> args :
          {std::vector<std::string>{"in.pdf", "-nosuchoption", "x", "{o}.pdf"},
@@ -753,8 +752,8 @@ TEST(parity_errors) {
 
 // ---- help ----
 
-// Every help text, with the program's name changed as decision 13 says and the version line of the
-// general help left out.
+// Every help text, with the program's name changed and the version line of the general help left
+// out.
 TEST(parity_helpTexts) {
     const auto renamed = [](std::string text) {
         for (const auto& [from, to] : {std::pair<std::string, std::string>{"jPDF Tweak", "PDF Tweak"},

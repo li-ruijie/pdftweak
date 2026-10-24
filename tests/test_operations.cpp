@@ -41,7 +41,7 @@ int permissionValue(const std::filesystem::path& pdf, const std::string& passwor
 
 TEST(main_encryptionModesPasswordsAndPermissions) {
     const auto in = pdfOfSizes(".", "in.pdf", {kA4});
-    // decision 4: R2 and R3 /P as Java writes them, R4 with bit 10 set
+    // R2 and R3 /P as Java writes them, R4 with bit 10 set
     const int expected[] = {-44, -3884, -3372};
     for (int mode = 0; mode <= 2; ++mode) {
         const std::filesystem::path out = "mode" + std::to_string(mode) + ".pdf";

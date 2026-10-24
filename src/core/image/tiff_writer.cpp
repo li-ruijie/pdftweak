@@ -1,5 +1,5 @@
 // The TIFF files of MuPdfRenderer.writeTiff with libtiff, tagged as the JDK's TIFFImageWriter tags
-// them (spec section 6 and its question 2).
+// them.
 //
 // - Grey images are BlackIsZero and RGB images are RGB, with associated alpha as an extra sample.
 //   JPEG compression writes RGB as YCbCr with 2 by 2 chroma subsampling.

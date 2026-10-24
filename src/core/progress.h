@@ -5,7 +5,7 @@
 
 namespace pdftweak {
 
-// Receives the progress of a run (spec section 9.1). An operation starts a stage with a label and a
+// Receives the progress of a run. An operation starts a stage with a label and a
 // count of units, usually pages, then reports the units it has finished. Between units it asks
 // whether the run was cancelled.
 class Progress {

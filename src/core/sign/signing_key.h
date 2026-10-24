@@ -1,6 +1,6 @@
 #pragma once
 
-// The signing key of PdfTweak.setSignature (spec section 7). A keystore is a PKCS#12 file, or a
+// The signing key of PdfTweak.setSignature. A keystore is a PKCS#12 file, or a
 // Windows certificate store named cert:CurrentUser\My or cert:LocalMachine\My (any store name may
 // follow the location). Java keystores (JKS) are refused with the keytool command that converts them.
 

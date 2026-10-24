@@ -5,10 +5,11 @@
 # from iText's glyphlist.txt (the last name listed for a value wins), and the name finds its metrics
 # in the AFM. Codes without a glyph get width 0 and no box.
 #
-#   pwsh tools/gen-helvetica.ps1 [-Jar path\to\itextpdf-5.5.13.6.jar]
+#   pwsh tools/gen-helvetica.ps1 -Jar path\to\itextpdf-5.5.13.6.jar
 
 param(
-    [string]$Jar = 'C:\src\jpdftweak\lib\itextpdf-5.5.13.6.jar'
+    [Parameter(Mandatory)]
+    [string]$Jar
 )
 
 $ErrorActionPreference = 'Stop'

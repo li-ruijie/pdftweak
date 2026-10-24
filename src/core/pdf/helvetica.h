@@ -1,7 +1,7 @@
 #pragma once
 
 // The metrics of the non-embedded Helvetica in WinAnsiEncoding that watermarks and page numbers use,
-// as iText's BaseFont.createFont("Helvetica", BaseFont.WINANSI, false) reports them (decision 2).
+// as iText's BaseFont.createFont("Helvetica", BaseFont.WINANSI, false) reports them.
 
 #include <string_view>
 

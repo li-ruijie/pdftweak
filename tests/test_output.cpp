@@ -1,5 +1,5 @@
-// Tests of the command line and output decisions of the M2 plan (decisions 4 and 9 to 15), which
-// have no counterpart in the Java tests.
+// Tests of the command line and output behaviour that the port settles where Java left it open or
+// changed it, which have no counterpart in the Java tests.
 
 #include "runner.h"
 
@@ -99,7 +99,7 @@ std::string infoValue(const std::filesystem::path& pdf, const std::string& key) 
 
 TEST(main_queryRunsWithoutOutputExitZero) {
     const auto in = fixture(".", "in.pdf", 1);
-    // decision 14
+    // a run that only queries writes no output and exits with 0
     CliResult result = runCliCapture({in, "-info", "-"});
     CHECK_EQUAL(result.exitCode, 0);
     CHECK(result.out.starts_with("PAGECOUNT 1\r\nENCRYPTION -1\r\n"));
@@ -119,7 +119,7 @@ TEST(main_queryRunsWithoutOutputExitZero) {
     result = runCliCapture({"-o", "out.pdf"});
     CHECK_EQUAL(result.exitCode, 1);
     CHECK_EQUAL(result.err, std::string("No input files.\r\n"));
-    // decision 9
+    // a missing input fails with iText's message and exit code 1
     result = runCliCapture({"missing.pdf", "out.pdf"});
     CHECK_EQUAL(result.exitCode, 1);
     CHECK(result.err.starts_with("Error: ") &&
@@ -136,7 +136,7 @@ TEST(main_queryRunsWithoutOutputExitZero) {
 }
 
 TEST(main_infoPrintsKeysInJavaOrderWithTheProducerNote) {
-    // decision 12: the order of the file decides between keys of one HashMap bucket
+    // the order of the file decides between keys of one HashMap bucket
     const auto titleFirst = handWrittenPdf("title-first.pdf", "<< /Title (T) /Author (A) /Producer (P) >>");
     CliResult result = runCliCapture({titleFirst, "-info", "-"});
     CHECK(result.out.find(std::string("DOCINFO Producer=P") + kProducerNote +
@@ -144,7 +144,7 @@ TEST(main_infoPrintsKeysInJavaOrderWithTheProducerNote) {
     const auto authorFirst = handWrittenPdf("author-first.pdf", "<< /Author (A) /Title (T) >>");
     result = runCliCapture({authorFirst, "-info", "-"});
     CHECK(result.out.find("DOCINFO Author=A\r\nDOCINFO Title=T\r\n") != std::string::npos);
-    // decision 10: the note is added once, and nothing is added without a Producer
+    // the note is added once, and nothing is added without a Producer
     CHECK(result.out.find("Producer") == std::string::npos);
     const auto marked =
         handWrittenPdf("marked.pdf", std::string("<< /Producer (P") + kProducerNote + ") >>");
@@ -160,7 +160,7 @@ TEST(main_infoPrintsKeysInJavaOrderWithTheProducerNote) {
 TEST(main_outputSetsModDateAndSuppliesAMissingProducer) {
     const auto in = fixture(".", "in.pdf", 2);
     runCli({in, "out.pdf"});
-    // decision 10: Producer kept, ModDate renewed, CreationDate kept
+    // Producer kept, ModDate renewed, CreationDate kept
     CHECK(infoValue("out.pdf", "/Producer").starts_with("iText"));
     CHECK(infoValue("out.pdf", "/ModDate") != std::string("D:20261023120000+08'00'"));
     CHECK_EQUAL(infoValue("out.pdf", "/CreationDate"), std::string("D:20261023120000+08'00'"));
@@ -215,7 +215,7 @@ TEST(main_outputUpdatesExistingXmpProperties) {
 
 TEST(main_userPasswordPrintsAsJavaDecodesIt) {
     const auto in = fixture(".", "in.pdf", 1);
-    // decision 15: Latin-1 bytes decoded as UTF-8 with Java's replacement rules
+    // Latin-1 bytes decoded as UTF-8 with Java's replacement rules
     runCli({in, "-ownerpw", "owner", "-userpw", "café", "-encmode", "1", "latin.pdf"});
     CHECK(
         runCliCapture({"-password", "owner", "latin.pdf", "-info", "-"}).out.find("    USERPW caf�\r\n") !=
@@ -226,7 +226,7 @@ TEST(main_userPasswordPrintsAsJavaDecodesIt) {
 }
 
 TEST(main_namedDestinationsAreConsolidated) {
-    // decision 11: links and bookmarks to named destinations point to pages after opening
+    // links and bookmarks to named destinations point to pages after opening
     const auto plain = fixture(".", "plain.pdf", 2);
     {
         QPDF pdf;

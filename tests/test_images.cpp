@@ -1,4 +1,4 @@
-// Ports of the image export tests of OperationTests.java and RegressionTests.java (spec section 6).
+// Ports of the image export tests of OperationTests.java and RegressionTests.java.
 
 #include "runner.h"
 
@@ -231,7 +231,7 @@ TEST(main_tiffOutputReplacesAnExistingFile) {
     CHECK_EQUAL(cliError({in, "-oi", std::filesystem::absolute("star*.tiff")}), std::string("Bad pathname"));
 }
 
-// The JDK's TIFF writer cannot JPEG-compress an image with an alpha channel (decision 3).
+// The JDK's TIFF writer cannot JPEG-compress an image with an alpha channel.
 TEST(main_tiffJpegCompressionRefusesTransparency) {
     const auto in = fixture(".", "in.pdf", 2);
     const std::string message =

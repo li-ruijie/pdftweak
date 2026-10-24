@@ -11,7 +11,7 @@ namespace pdftweak::test {
 
 struct DescribeOptions {
     std::string password;
-    bool javaPermissions = false; // adjust Java's /P as decision 4 allows
+    bool javaPermissions = false; // adjust Java's /P to the bits the port writes
     bool text = true;
 };
 

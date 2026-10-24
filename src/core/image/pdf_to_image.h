@@ -1,7 +1,7 @@
 #pragma once
 
 // PdfToImage: the export of PDF pages as image files, as burst output (-burstfiletype with -ob) and
-// as one multipage TIFF (-oi). Pages render at 72 dpi (spec section 6). MuPDF writes JPG, PNG, PAM,
+// as one multipage TIFF (-oi). Pages render at 72 dpi. MuPDF writes JPG, PNG, PAM,
 // and PNM, Windows Imaging Component writes GIF and BMP, and libtiff writes TIFF.
 
 #include <optional>

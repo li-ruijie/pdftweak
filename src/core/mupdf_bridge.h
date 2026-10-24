@@ -1,6 +1,6 @@
 #pragma once
 
-// Every MuPDF call of the core lives in mupdf_bridge.cpp (spec section 4.4). MuPDF reports errors
+// Every MuPDF call of the core lives in mupdf_bridge.cpp. MuPDF reports errors
 // with setjmp and longjmp, so each call sequence sits in a function whose fz_try block holds no
 // object with a destructor, and the error becomes a pdftweak::Error after fz_catch.
 
@@ -54,7 +54,7 @@ private:
     std::unique_ptr<State> state_;
 };
 
-// Signing (spec section 7). Opens the finished PDF file, with the owner password when it is
+// Signing. Opens the finished PDF file, with the owner password when it is
 // encrypted, adds the signature field SignatureN (the first free N) to page 1 at [100 100 200 200]
 // when visible and with an empty rectangle otherwise, signs it with the key, certifies it at the
 // level (1 to 3) when it is above 0, and appends the signature to the file as an incremental update.

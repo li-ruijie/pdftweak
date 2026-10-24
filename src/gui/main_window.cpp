@@ -148,7 +148,7 @@ private:
         quitButton = button(L"Quit", [] { PostQuitMessage(0); });
         buttons.add(quitButton, 3, 1);
 
-        // the progress panel of spec section 9.1: the file, the stage, and the bar with Cancel
+        // the progress panel: the file, the stage, and the bar with Cancel
         FormLayout& panel = newLayout(L"f:p:g, f:p, f:p", L"f:p, f:p, f:p");
         fileLine = createChild(handle(), WC_STATICW, L"", SS_LEFT | SS_NOPREFIX | SS_ENDELLIPSIS);
         stageLine = createChild(handle(), WC_STATICW, L"", SS_LEFT | SS_NOPREFIX | SS_ENDELLIPSIS);

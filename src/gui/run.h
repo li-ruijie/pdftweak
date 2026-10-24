@@ -1,6 +1,6 @@
 #pragma once
 
-// A run of the tabs' work on a worker thread (spec section 9.1). The worker reports through
+// A run of the tabs' work on a worker thread. The worker reports through
 // GuiProgress, which posts at most one update per 50 milliseconds to the window, and ends by posting
 // its result. Cancel takes effect at the next page or stage boundary.
 
