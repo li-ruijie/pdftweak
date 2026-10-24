@@ -4,11 +4,20 @@
 # version tag in a trailing comment for Dependabot.
 name: Build
 
+# A change to the README, the licence, or the Dependabot settings alone builds nothing.
 on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "**.md"
+      - LICENSE
+      - .github/dependabot.yml
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - LICENSE
+      - .github/dependabot.yml
   workflow_dispatch:
   workflow_call:
 
