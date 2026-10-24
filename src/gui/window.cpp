@@ -249,7 +249,11 @@ HWND Page::comboBox(const std::vector<std::wstring>& items, std::function<void()
 
 HWND Page::separator() { return createChild(hwnd_, WC_STATICW, L"", SS_ETCHEDHORZ); }
 
-HWND Page::groupBox(const std::wstring& text) { return createChild(hwnd_, WC_BUTTONW, text, BS_GROUPBOX); }
+// A group box draws only its frame and title. Transparent, it stays in the page's painting, which
+// clips its other children out, so the page paints its inside.
+HWND Page::groupBox(const std::wstring& text) {
+    return createChild(hwnd_, WC_BUTTONW, text, BS_GROUPBOX, WS_EX_TRANSPARENT);
+}
 
 void Page::onCommand(HWND control, std::function<void(int code)> handler) {
     commands_[control] = std::move(handler);

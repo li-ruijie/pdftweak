@@ -116,6 +116,29 @@ TEST(gui_layoutMeasuresEachComponentOncePerPass) {
     CHECK_EQUAL(measured, 6);
 }
 
+// A page clips its children out of its painting, and a group box draws only its frame and title, so
+// the inside of a group box kept what the previous tab drew there until something else repainted it.
+// Every group box is transparent, which leaves its inside to the page.
+TEST(gui_groupBoxesLeaveTheirInsideToThePage) {
+    gui::MainWindow window(false);
+    std::vector<HWND> groupBoxes;
+    for (int i = 0; i < window.tabCount(); ++i)
+        EnumChildWindows(
+            window.tab(i).handle(),
+            [](HWND child, LPARAM found) -> BOOL {
+                wchar_t name[16];
+                GetClassNameW(child, name, 16);
+                if (_wcsicmp(name, WC_BUTTONW) == 0 &&
+                    (GetWindowLongW(child, GWL_STYLE) & BS_TYPEMASK) == BS_GROUPBOX)
+                    reinterpret_cast<std::vector<HWND>*>(found)->push_back(child);
+                return TRUE;
+            },
+            reinterpret_cast<LPARAM>(&groupBoxes));
+    CHECK_EQUAL(groupBoxes.size(), size_t{2});
+    for (const HWND groupBox : groupBoxes)
+        CHECK((GetWindowLongW(groupBox, GWL_EXSTYLE) & WS_EX_TRANSPARENT) != 0);
+}
+
 namespace {
 
 // AbstractButton.doClick: a check box changes its state, then the button reports the click, unless it
