@@ -130,15 +130,13 @@ Operation InteractionTab::prepare() {
                     t.to += pages + 1;
                 if (t.from > pages)
                     continue;
+                // a first page before the first of the file, named as the First Page cell gives it
+                if (t.from < 1)
+                    throw Error(Error::Kind::Io, "Page " + std::to_string(typed) + " does not exist.");
                 if (t.to > pages)
                     t.to = pages;
-                for (int j = t.from; j <= t.to; ++j) {
-                    // a page before the first, where Java's setTransition indexed outside its array, named
-                    // as the First Page cell gives it
-                    if (j < 1)
-                        throw Error(Error::Kind::Io, "Page " + std::to_string(typed) + " does not exist.");
+                for (int j = t.from; j <= t.to; ++j)
                     tweak.setTransition(j, t.type, t.duration, t.pageDuration);
-                }
             }
         }
         if (preferences)

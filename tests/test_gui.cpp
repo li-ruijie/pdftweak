@@ -876,6 +876,9 @@ TEST(gui_interactionTabRunMatchesTheCommandLine) {
     table.row(0)[3] = 3;
     table.row(0)[0] = -5;
     CHECK_EQUAL(runError(window, "bad.pdf"), std::string("Page -5 does not exist."));
+    // jPDF Tweak 1.3.2 checks the first page before the range, so an empty range fails too
+    table.row(0)[1] = -6;
+    CHECK_EQUAL(runError(window, "bad.pdf"), std::string("Page -5 does not exist."));
 }
 
 // DocumentInfoTab: Load lists the input's information, Add predefined adds a known name, and a run
