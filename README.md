@@ -54,6 +54,10 @@ Release build and checks that it runs with a PATH of the Windows folders only.
 PDF Tweak is free software under the GNU Affero General Public License, version 3 or later. See
 LICENSE.
 
+The program links MuPDF with the libraries it compiles, qpdf, libtiff, zlib, and libjpeg-turbo, and it
+carries Helvetica metrics derived from Adobe's AFM files. The `licences` folder of the distributable
+folder holds the licence or notice of each, and its `sources` folder holds the sources of the libraries.
+
 ## ChangeLog
 
 ### Unreleased

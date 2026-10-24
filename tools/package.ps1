@@ -119,6 +119,32 @@ foreach ($name in $licences.Keys) {
     }
 }
 
+# The Helvetica metrics that pdftweak.exe carries come from Adobe's AFM file, whose copyright line and
+# permission paragraph head helvetica.cpp. The notice takes them from there, with each paragraph of
+# the comment joined into one line again, so that the paragraph reads as Adobe wrote it.
+$comment = @()
+foreach ($line in (Get-Content (Join-Path $repo 'src\core\pdf\helvetica.cpp') | Select-Object -Skip 2)) {
+    if (-not $line.StartsWith('//')) { break }
+    $comment += $line -replace '^// ?', ''
+}
+$paragraphs = @()
+$current = @()
+foreach ($line in $comment + '') {
+    if ($line -ne '') {
+        $current += $line
+    } elseif ($current.Count -gt 0) {
+        $paragraphs += $current -join ' '
+        $current = @()
+    }
+}
+if ($paragraphs.Count -ne 4 -or $paragraphs[1] -notlike 'Copyright*') {
+    throw 'The notice at the head of helvetica.cpp has changed its form'
+}
+$adobe = Join-Path $dist 'licences\adobe-afm'
+New-Item -ItemType Directory -Force $adobe | Out-Null
+$notice = (@('The Helvetica metrics in pdftweak.exe') + $paragraphs) -join "`r`n`r`n"
+[IO.File]::WriteAllText((Join-Path $adobe 'NOTICE.txt'), "$notice`r`n")
+
 # The sources: the archives deps.ps1 verified, checked again, and PDF Tweak at HEAD.
 foreach ($pin in $pins.Values) {
     $archive = Join-Path $sources (Split-Path -Leaf ([Uri]$pin.Url).AbsolutePath)
