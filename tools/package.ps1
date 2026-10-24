@@ -145,7 +145,7 @@ try {
         $copy = [System.Formats.Tar.UstarTarEntry]::new($entry.EntryType, $entry.Name)
         $copy.Mode = $entry.Mode
         $copy.ModificationTime = $commitTime
-        $copy.DataStream = $entry.DataStream
+        if ($null -ne $entry.DataStream) { $copy.DataStream = $entry.DataStream }
         $writer.WriteEntry($copy)
     }
 } finally {
