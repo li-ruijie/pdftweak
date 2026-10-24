@@ -241,8 +241,9 @@ int FormLayout::fixedPixels(const Spec& spec, bool horizontal) const {
     return horizontal ? dluToPixelsX(window_, spec.dlu) : dluToPixelsY(window_, spec.dlu);
 }
 
-std::vector<int> FormLayout::sizes(const std::vector<Spec>& specs, bool horizontal, int available) const {
-    std::vector<int> result(specs.size(), 0);
+// The preferred size of every component, measured once for both axes, as each nested layout
+// measures its own components again.
+std::vector<SIZE> FormLayout::measure() const {
     std::vector<SIZE> preferred;
     for (const Item& item : items_) {
         // each cell keeps a gap of two pixels on every side
@@ -251,6 +252,12 @@ std::vector<int> FormLayout::sizes(const std::vector<Spec>& specs, bool horizont
         size.cy += 2 * scaled(window_, 2);
         preferred.push_back(size);
     }
+    return preferred;
+}
+
+std::vector<int> FormLayout::sizes(const std::vector<Spec>& specs, const std::vector<SIZE>& preferred,
+                                   bool horizontal, int available) const {
+    std::vector<int> result(specs.size(), 0);
     for (size_t i = 0; i < specs.size(); ++i)
         if (!specs[i].preferred)
             result[i] = fixedPixels(specs[i], horizontal);
@@ -328,8 +335,9 @@ std::vector<int> FormLayout::sizes(const std::vector<Spec>& specs, bool horizont
 }
 
 SIZE FormLayout::preferredSize() const {
-    const std::vector<int> widths = sizes(columns_, true, -1);
-    const std::vector<int> heights = sizes(rows_, false, -1);
+    const std::vector<SIZE> preferred = measure();
+    const std::vector<int> widths = sizes(columns_, preferred, true, -1);
+    const std::vector<int> heights = sizes(rows_, preferred, false, -1);
     SIZE size{0, 0};
     for (const int w : widths)
         size.cx += w;
@@ -339,8 +347,9 @@ SIZE FormLayout::preferredSize() const {
 }
 
 void FormLayout::layout(const RECT& area) {
-    const std::vector<int> widths = sizes(columns_, true, area.right - area.left);
-    const std::vector<int> heights = sizes(rows_, false, area.bottom - area.top);
+    const std::vector<SIZE> preferred = measure();
+    const std::vector<int> widths = sizes(columns_, preferred, true, area.right - area.left);
+    const std::vector<int> heights = sizes(rows_, preferred, false, area.bottom - area.top);
     std::vector<int> xs(widths.size() + 1, area.left);
     std::vector<int> ys(heights.size() + 1, area.top);
     for (size_t i = 0; i < widths.size(); ++i)

@@ -64,7 +64,9 @@ private:
         int x, y, w, h;
     };
     static std::vector<Spec> parse(std::wstring_view text);
-    std::vector<int> sizes(const std::vector<Spec>& specs, bool horizontal, int available) const;
+    std::vector<SIZE> measure() const;
+    std::vector<int> sizes(const std::vector<Spec>& specs, const std::vector<SIZE>& preferred,
+                           bool horizontal, int available) const;
     int fixedPixels(const Spec& spec, bool horizontal) const;
 
     HWND window_;

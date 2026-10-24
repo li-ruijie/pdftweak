@@ -23,6 +23,7 @@
 #include <objbase.h>
 
 #include <filesystem>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -88,6 +89,31 @@ TEST(gui_mainFormBuildsEveryTab) {
     for (size_t i = 0; i < names.size(); ++i)
         CHECK_EQUAL(tabText(tabControl, static_cast<int>(i)), names[i]);
     CHECK_EQUAL(window.tabCount(), 11);
+}
+
+// A layout measures each of its components once per pass. Measuring once per axis made nested
+// layouts measure a control 2^depth times, and the window took seconds to open.
+TEST(gui_layoutMeasuresEachComponentOncePerPass) {
+    int measured = 0;
+    gui::Component inner;
+    inner.preferred = [&measured]() {
+        ++measured;
+        return SIZE{10, 10};
+    };
+    inner.place = [](const RECT&) {};
+    std::vector<std::unique_ptr<gui::FormLayout>> layouts;
+    for (int i = 0; i < 6; ++i) {
+        layouts.push_back(std::make_unique<gui::FormLayout>(GetDesktopWindow(), L"f:p", L"f:p"));
+        layouts.back()->add(inner, 1, 1);
+        inner = layouts.back()->asComponent();
+    }
+    const SIZE size = layouts.back()->preferredSize();
+    CHECK(size.cx > 10 && size.cy > 10);
+    CHECK_EQUAL(measured, 1);
+    // each layout measures its component once, then places it, and the nested layout measures again
+    measured = 0;
+    layouts.back()->layout({0, 0, 400, 300});
+    CHECK_EQUAL(measured, 6);
 }
 
 namespace {
