@@ -1,18 +1,20 @@
 # PDF Tweak
 
+[![Build](https://github.com/li-ruijie/pdftweak/actions/workflows/build.yml/badge.svg)](https://github.com/li-ruijie/pdftweak/actions/workflows/build.yml)
+
 PDF Tweak crops, rotates, scales, shuffles (n-up and booklets), watermarks, numbers, and bookmarks the
 pages of PDF files, edits page labels, attachments, viewer preferences, and document information,
 encrypts and signs documents, bursts them into single pages, and exports pages as images. It is a C++
-port of jPDF Tweak 1.3.2 with a native Windows interface, and it keeps jPDF Tweak's command-line
-syntax and file formats.
-
-This version is under development. The command line and the window are ported, and the program
-ships as a folder that runs without an installer.
+port of [jPDF Tweak](https://github.com/li-ruijie/jpdftweak) 1.3.2 with a native Windows interface,
+and it keeps jPDF Tweak's command-line syntax and file formats, so that scripts and bookmark files
+written for jPDF Tweak keep working. It needs no Java.
 
 ## Installing
 
-The folder `pdftweak-2.0.0` runs on 64-bit Windows 10 version 1703 or later. Copy it anywhere and
-run `pdftweak.exe` from it, or add it to PATH to run `pdftweak` in a console. It holds the program,
+Download `pdftweak-2.0.0-win-x64.zip` from the
+[releases](https://github.com/li-ruijie/pdftweak/releases) and unpack it. The folder `pdftweak-2.0.0`
+runs on 64-bit Windows 10 version 1703 or later without an installer. Copy it anywhere and run
+`pdftweak.exe` from it, or add it to PATH to run `pdftweak` in a console. It holds the program,
 the DLLs it needs with the C++ runtime, the licences of the libraries it links under `licences`, and
 the sources of those libraries and of PDF Tweak under `sources`. Deleting the folder removes the
 program.
