@@ -58,3 +58,11 @@ TEST(main_helpTextIsAccurate) {
     CHECK(output.find("-oi") != std::string::npos);
     CHECK(output.find("remove") != std::string::npos);
 }
+
+// RegressionTests.main_uncompressedOutputAfterAnOption: in jPDF Tweak 1.3.1 any option made -ou
+// compress again, as it set up the image export that turned the flag off.
+TEST(main_uncompressedOutputAfterAnOption) {
+    const auto in = fixture(".", "in.pdf", 1);
+    runCli({in, "-watermark", "DRAFT,20,0.5", "-ou", "out.pdf"});
+    CHECK_EQUAL(streamFilters("out.pdf"), std::string("[none]"));
+}

@@ -58,6 +58,10 @@ int pageEntry(const std::filesystem::path& pdf, int page, const std::string& key
 // OperationTests.objectCount: the number of objects in the file.
 int objectCount(const std::filesystem::path& pdf);
 
+// OperationTests.streamFilters: the distinct filters of the file's streams, sorted, as "[/DCTDecode,
+// none]", where "none" stands for a stream without a filter.
+std::string streamFilters(const std::filesystem::path& pdf);
+
 // OperationTests.tiffTags: the tags of the first image file directory of a TIFF. SHORT and LONG
 // values are read as numbers, and other types have no values.
 std::map<int, std::vector<long long>> tiffTags(const std::string& tiff);

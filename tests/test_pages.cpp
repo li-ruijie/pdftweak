@@ -14,6 +14,7 @@
 #include <qpdf/QPDF.hh>
 #include <qpdf/QPDFNameTreeObjectHelper.hh>
 #include <qpdf/QPDFPageDocumentHelper.hh>
+#include <qpdf/QPDFPageObjectHelper.hh>
 #include <qpdf/QPDFWriter.hh>
 
 #include <cmath>
@@ -444,6 +445,48 @@ TEST(main_optimizedSizeKeepsTheCatalog) {
     const auto in = catalogFixture();
     runCli({in, "-os", "optimized.pdf"});
     CHECK_EQUAL(catalogSummary("optimized.pdf"), catalogSummary(in));
+}
+
+// OperationTests.main_uncompressedOutputDecodesEveryStream: -ou writes every stream without the filters
+// that only compress, and keeps image encodings such as JPEG.
+TEST(main_uncompressedOutputDecodesEveryStream) {
+    const auto in = catalogFixture();
+    // a JPEG of an 8 by 8 page, drawn on page 2
+    runCli({pdfOfSizes(".", "picture.pdf", {{8.0f, 8.0f}}), "-burstfiletype", "JPG", "-ob",
+            std::filesystem::absolute("picture-*.jpg")});
+    {
+        QPDF pdf;
+        pdf.processFile(in.string().c_str());
+        QPDFObjectHandle image = pdf.newStream();
+        image.replaceStreamData(readFile("picture-1.jpg"), QPDFObjectHandle::newName("/DCTDecode"),
+                                QPDFObjectHandle::newNull());
+        image.getDict().replaceKey("/Type", QPDFObjectHandle::newName("/XObject"));
+        image.getDict().replaceKey("/Subtype", QPDFObjectHandle::newName("/Image"));
+        image.getDict().replaceKey("/Width", QPDFObjectHandle::newInteger(8));
+        image.getDict().replaceKey("/Height", QPDFObjectHandle::newInteger(8));
+        image.getDict().replaceKey("/ColorSpace", QPDFObjectHandle::newName("/DeviceRGB"));
+        image.getDict().replaceKey("/BitsPerComponent", QPDFObjectHandle::newInteger(8));
+        QPDFPageObjectHelper page = QPDFPageDocumentHelper(pdf).getAllPages()[1];
+        QPDFObjectHandle resources = page.getObjectHandle().getKey("/Resources");
+        if (!resources.isDictionary()) {
+            resources = QPDFObjectHandle::newDictionary();
+            page.getObjectHandle().replaceKey("/Resources", resources);
+        }
+        resources.replaceKey("/XObject", QPDFObjectHandle::parse("<< >>"));
+        resources.getKey("/XObject").replaceKey("/Im0", image);
+        page.addPageContents(pdf.newStream("q 8 0 0 8 300 300 cm /Im0 Do Q\n"), false);
+        QPDFWriter writer(pdf, "image.pdf");
+        writer.write();
+    }
+    CHECK_EQUAL(streamFilters("image.pdf"), std::string("[/DCTDecode, /FlateDecode]"));
+    runCli({"image.pdf", "-ou", "plain.pdf"});
+    CHECK_EQUAL(streamFilters("plain.pdf"), std::string("[/DCTDecode, none]"));
+    runCli({"image.pdf", "-crop", "MediaBox", "-ou", "cropped.pdf"});
+    CHECK_EQUAL(streamFilters("cropped.pdf"), std::string("[/DCTDecode, none]"));
+    // burst files take the page labels
+    runCli({"image.pdf", "-oub", std::filesystem::absolute("page*.pdf")});
+    for (const std::string label : {"i", "ii", "iii"})
+        CHECK(streamFilters("page" + label + ".pdf").find("/FlateDecode") == std::string::npos);
 }
 
 // Setting page labels changes nothing else in the catalog.

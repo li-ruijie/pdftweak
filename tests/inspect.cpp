@@ -24,6 +24,7 @@
 #include <cstring>
 #include <numbers>
 #include <regex>
+#include <set>
 
 #pragma comment(lib, "bcrypt.lib")
 #pragma comment(lib, "crypt32.lib")
@@ -272,6 +273,21 @@ int pageEntry(const std::filesystem::path& pdf, int page, const std::string& key
 int objectCount(const std::filesystem::path& pdf) {
     const auto qpdf = openPdf(pdf);
     return static_cast<int>(qpdf->getAllObjects().size());
+}
+
+std::string streamFilters(const std::filesystem::path& pdf) {
+    const auto qpdf = openPdf(pdf);
+    std::set<std::string> filters;
+    for (QPDFObjectHandle object : qpdf->getAllObjects()) {
+        if (!object.isStream())
+            continue;
+        const QPDFObjectHandle filter = object.getDict().getKey("/Filter");
+        filters.insert(filter.isNull() ? "none" : filter.unparse());
+    }
+    std::string result = "[";
+    for (const std::string& filter : filters)
+        result += (result.size() > 1 ? ", " : "") + filter;
+    return result + "]";
 }
 
 std::map<int, std::vector<long long>> tiffTags(const std::string& tiff) {
